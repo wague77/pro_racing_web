@@ -7,7 +7,7 @@ const inter = Inter({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
   title: "Pro-Racing Stats",
-  description: "Pronostics et analyses PMU",
+  description: "Pronostics et analyses PMU IA",
 };
 
 export default function RootLayout({
@@ -16,8 +16,8 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="fr">
-      <body className={`${inter.className} bg-[#F7F7F9] text-[#1C1C1E]`}>
+    <html lang="fr" className="dark">
+      <body className={`${inter.className} bg-[#0A0A0C] text-gray-100 selection:bg-[#10B981] selection:text-white`}>
         <AuthProvider>
           {children}
         </AuthProvider>

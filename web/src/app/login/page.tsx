@@ -2,19 +2,23 @@
 
 import React, { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Award, Info, PlayCircle, Loader2, Lock } from "lucide-react";
+import { Award, PlayCircle, Loader2, Lock, KeyRound } from "lucide-react";
 import { useAuth } from "@/lib/auth";
 import { IMAGES } from "@/lib/theme";
 
 export default function Login() {
   const router = useRouter();
-  const { signInAdmin, signInDemo, expiredNotice, clearExpiredNotice } = useAuth();
+  const { signInAdmin, signInDemo, signInWithCode, expiredNotice, clearExpiredNotice } = useAuth();
   
+  const [code, setCode] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const [demoLoading, setDemoLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [shake, setShake] = useState(false);
+  
+  // "code" | "admin"
+  const [mode, setMode] = useState<"code" | "admin">("code");
 
   useEffect(() => {
     if (expiredNotice) {
@@ -26,6 +30,21 @@ export default function Login() {
   const runShake = () => {
     setShake(true);
     setTimeout(() => setShake(false), 500);
+  };
+
+  const submitCode = async () => {
+    if (!code.trim() || loading) return;
+    setLoading(true);
+    setError(null);
+    try {
+      await signInWithCode(code.trim());
+      router.replace("/");
+    } catch (e: any) {
+      setError(e.message || "Code d'accès invalide ou expiré");
+      runShake();
+    } finally {
+      setLoading(false);
+    }
   };
 
   const submitAdmin = async () => {
@@ -58,83 +77,114 @@ export default function Login() {
   };
 
   return (
-    <div className="flex flex-col h-screen bg-[#1C1C1E] relative overflow-hidden">
+    <div className="flex flex-col h-screen bg-[#0A0A0C] relative overflow-hidden">
       {/* Background Image & Gradient */}
       <div 
-        className="absolute inset-0 z-0 bg-cover bg-center" 
+        className="absolute inset-0 z-0 bg-cover bg-center opacity-40 mix-blend-luminosity" 
         style={{ backgroundImage: `url(${IMAGES.hero})` }} 
       />
-      <div className="absolute inset-0 z-0 bg-gradient-to-b from-[#1C1C1E8C] via-[#1C1C1EBF] to-[#1C1C1E]" />
+      <div className="absolute inset-0 z-0 bg-gradient-to-t from-[#0A0A0C] via-[#0A0A0C]/80 to-transparent" />
 
       {/* Top Content */}
-      <div className="relative z-10 flex-1 px-6 pt-20 md:pt-32 max-w-lg mx-auto w-full">
-        <div className="flex items-center gap-3">
-          <div className="w-12 h-12 rounded-2xl bg-[#0A7A42] flex items-center justify-center">
-            <Award size={26} color="#ffffff" />
+      <div className="relative z-10 flex-1 px-6 pt-20 md:pt-32 max-w-md mx-auto w-full text-center">
+        <div className="flex flex-col items-center gap-4">
+          <div className="w-16 h-16 rounded-3xl bg-gradient-to-br from-[#10B981] to-[#047857] flex items-center justify-center shadow-[0_0_30px_rgba(16,185,129,0.3)]">
+            <Award size={36} color="#ffffff" />
           </div>
-          <h1 className="text-3xl font-extrabold text-white tracking-tight flex-1">Pro-Racing Stats</h1>
+          <h1 className="text-4xl font-black text-white tracking-tight">Pro-Racing</h1>
         </div>
-        <p className="text-white/85 text-lg mt-6 leading-relaxed">
-          Horse Data Analysis<br />Réunions · Statistiques · Données
+        <p className="text-gray-400 text-lg mt-4 font-medium">
+          L'intelligence artificielle au service<br />de vos pronostics hippiques
         </p>
       </div>
 
       {/* Bottom Sheet */}
-      <div className="relative z-10 bg-white rounded-t-[28px] px-6 pt-8 pb-10 w-full max-w-lg mx-auto shadow-2xl">
-        <h2 className="text-2xl font-extrabold text-[#1C1C1E]">Connexion</h2>
-        <p className="text-[#8E8E93] mt-1.5 leading-5">
-          Connectez-vous en tant qu'administrateur ou essayez l'application en mode démo.
-        </p>
+      <div className="relative z-10 glass-panel rounded-t-[40px] px-8 pt-8 pb-12 w-full max-w-lg mx-auto border-t border-white/10">
+        <div className="flex bg-white/5 p-1 rounded-xl mb-8">
+          <button
+            onClick={() => { setMode("code"); setError(null); }}
+            className={`flex-1 py-2.5 text-sm font-bold rounded-lg transition-all ${
+              mode === "code" ? "bg-[#10B981] text-white shadow-lg" : "text-gray-400 hover:text-white"
+            }`}
+          >
+            Code d'accès
+          </button>
+          <button
+            onClick={() => { setMode("admin"); setError(null); }}
+            className={`flex-1 py-2.5 text-sm font-bold rounded-lg transition-all ${
+              mode === "admin" ? "bg-[#10B981] text-white shadow-lg" : "text-gray-400 hover:text-white"
+            }`}
+          >
+            Administrateur
+          </button>
+        </div>
 
-        <div className={`mt-6 transition-transform ${shake ? 'animate-shake' : ''}`}>
-          <div className="relative flex items-center">
-            <Lock className="absolute left-4 text-[#8E8E93]" size={20} />
-            <input
-              type="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              placeholder="Mot de passe administrateur"
-              className={`w-full bg-[#EBEBEF] rounded-xl pl-12 pr-4 py-4 text-xl font-bold tracking-widest text-[#1C1C1E] border-2 outline-none transition-colors ${error ? 'border-[#E11D48]' : 'border-transparent focus:border-[#0A7A42]'}`}
-              onKeyDown={(e) => {
-                if (e.key === 'Enter') submitAdmin();
-              }}
-            />
-          </div>
+        <div className={`transition-transform ${shake ? 'animate-shake' : ''}`}>
+          {mode === "code" ? (
+            <div className="relative flex items-center">
+              <KeyRound className="absolute left-4 text-gray-400" size={20} />
+              <input
+                type="text"
+                value={code}
+                onChange={(e) => setCode(e.target.value.toUpperCase())}
+                placeholder="Entrez votre code d'accès"
+                className={`w-full bg-white/5 rounded-2xl pl-12 pr-4 py-4 text-lg font-bold tracking-widest text-white border-2 outline-none transition-colors placeholder:text-gray-500 placeholder:tracking-normal ${
+                  error ? 'border-red-500/50 focus:border-red-500' : 'border-white/5 focus:border-[#10B981]'
+                }`}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') submitCode();
+                }}
+              />
+            </div>
+          ) : (
+            <div className="relative flex items-center">
+              <Lock className="absolute left-4 text-gray-400" size={20} />
+              <input
+                type="password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                placeholder="Mot de passe administrateur"
+                className={`w-full bg-white/5 rounded-2xl pl-12 pr-4 py-4 text-lg font-bold text-white border-2 outline-none transition-colors placeholder:text-gray-500 ${
+                  error ? 'border-red-500/50 focus:border-red-500' : 'border-white/5 focus:border-[#10B981]'
+                }`}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') submitAdmin();
+                }}
+              />
+            </div>
+          )}
         </div>
 
         {error && (
-          <p className="text-[#E11D48] text-base mt-2 text-center">{error}</p>
+          <p className="text-red-400 text-sm font-medium mt-3 text-center">{error}</p>
         )}
 
         <button
-          onClick={submitAdmin}
-          disabled={!password.trim() || loading}
-          className="w-full bg-[#0A7A42] text-white rounded-xl py-4 mt-6 flex justify-center items-center font-extrabold text-lg transition-opacity disabled:opacity-50"
+          onClick={mode === "code" ? submitCode : submitAdmin}
+          disabled={(mode === "code" ? !code.trim() : !password.trim()) || loading}
+          className="w-full bg-gradient-to-r from-[#10B981] to-[#047857] text-white rounded-2xl py-4 mt-6 flex justify-center items-center font-black text-lg transition-all hover:scale-[1.02] active:scale-[0.98] disabled:opacity-50 disabled:pointer-events-none shadow-[0_4px_20px_rgba(16,185,129,0.3)]"
         >
-          {loading ? <Loader2 className="animate-spin" /> : "Accès Complet"}
+          {loading ? <Loader2 className="animate-spin" /> : "Se connecter"}
         </button>
 
-        <div className="flex items-center gap-3 mt-6">
-          <div className="flex-1 h-[1px] bg-black/10" />
-          <span className="text-black/40 text-sm font-semibold">ou</span>
-          <div className="flex-1 h-[1px] bg-black/10" />
+        <div className="flex items-center gap-4 mt-8">
+          <div className="flex-1 h-[1px] bg-white/10" />
+          <span className="text-gray-500 text-sm font-semibold uppercase tracking-widest">Ou</span>
+          <div className="flex-1 h-[1px] bg-white/10" />
         </div>
 
         <button
           onClick={submitDemo}
           disabled={demoLoading}
-          className="w-full flex justify-center items-center gap-2 py-3.5 mt-4 rounded-xl bg-black/5 text-[#1C1C1E] font-extrabold text-base transition-opacity disabled:opacity-50 hover:bg-black/10"
+          className="w-full flex justify-center items-center gap-2 py-4 mt-6 rounded-2xl bg-white/5 text-white font-bold text-base transition-all hover:bg-white/10 active:scale-[0.98] disabled:opacity-50 border border-white/5"
         >
-          {demoLoading ? <Loader2 className="animate-spin text-[#0A7A42]" /> : (
+          {demoLoading ? <Loader2 className="animate-spin text-[#10B981]" /> : (
             <>
-              <PlayCircle size={18} color="#0A7A42" />
-              Essayer en mode démo (gratuit)
+              <PlayCircle size={20} className="text-[#10B981]" />
+              Essayer en mode démo
             </>
           )}
         </button>
-        <p className="text-black/40 text-sm text-center mt-2">
-          3 courses · aperçu des fonctionnalités
-        </p>
       </div>
     </div>
   );

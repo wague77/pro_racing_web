@@ -14,27 +14,29 @@ export default function DatePicker({
   for (let i = -3; i <= 7; i++) days.push(dayjs().startOf("day").add(i, "day"));
 
   return (
-    <div className="flex overflow-x-auto gap-2 px-4 py-2 scrollbar-hide">
+    <div className="flex overflow-x-auto gap-3 px-4 py-3 scrollbar-hide">
       {days.map((d) => {
         const active = d.isSame(selected, "day");
         return (
           <button
             key={d.format("DDMMYYYY")}
             onClick={() => onSelect(d)}
-            className={`flex-shrink-0 min-w-[62px] flex flex-col items-center py-2 px-3 rounded-xl transition-colors ${
-              active ? "bg-[#0A7A42]" : "bg-[#EBEBEF] hover:bg-[#E5E5EA]"
+            className={`flex-shrink-0 min-w-[72px] flex flex-col items-center py-2.5 px-3 rounded-2xl transition-all duration-300 ${
+              active 
+                ? "bg-[#10B981] shadow-[0_0_15px_rgba(16,185,129,0.3)] scale-105" 
+                : "bg-white/5 hover:bg-white/10 border border-white/5"
             }`}
           >
             <span
-              className={`text-[12px] font-semibold capitalize ${
-                active ? "text-white" : "text-[#3A3A3C]"
+              className={`text-xs font-bold capitalize mb-0.5 ${
+                active ? "text-white" : "text-gray-400"
               }`}
             >
               {dateLabel(d)}
             </span>
             <span
-              className={`text-[14px] font-extrabold mt-0.5 ${
-                active ? "text-white" : "text-[#1C1C1E]"
+              className={`text-base font-black ${
+                active ? "text-white" : "text-gray-200"
               }`}
             >
               {d.format("DD/MM")}

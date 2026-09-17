@@ -66,21 +66,21 @@ export default function Pronostics() {
   }, [flat, isDemo]);
 
   return (
-    <div className="flex-1 flex flex-col bg-[#F2F2F7]">
-      <div className="bg-[#1C1C1E] pt-8 pb-3 shadow-md sticky top-0 z-20">
-        <h1 className="text-3xl font-extrabold text-white px-5">Pronostics</h1>
-        <p className="text-base text-white/70 px-5 mt-0.5 mb-3">Top 8 IA · sélectionnez une course</p>
+    <div className="flex-1 flex flex-col min-h-screen">
+      <div className="glass-panel border-b border-white/5 pt-8 pb-4 sticky top-0 z-20">
+        <h1 className="text-3xl font-black text-white px-6">Pronostics</h1>
+        <p className="text-sm font-medium text-gray-400 px-6 mt-1 mb-4">Top 8 IA · Sélectionnez une course</p>
         
         <button
           onClick={() => router.push(isDemo ? "/paywall" : "/performance")}
-          className="mx-5 mb-3 flex flex-row items-center gap-4 p-3 rounded-lg bg-[#E6F4EA] transition-colors hover:bg-[#D1EADB]"
+          className="mx-6 mb-4 flex flex-row items-center gap-4 p-3.5 rounded-2xl bg-gradient-to-r from-white/5 to-transparent border border-white/10 transition-all hover:bg-white/10 group"
         >
-          <div className="w-9 h-9 rounded-[10px] bg-[#10B981] flex items-center justify-center shrink-0">
-            {isDemo ? <Lock size={18} color="#fff" /> : <BarChart3 size={18} color="#fff" />}
+          <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-[#10B981] to-[#047857] flex items-center justify-center shrink-0 shadow-[0_0_15px_rgba(16,185,129,0.4)] group-hover:scale-110 transition-transform">
+            {isDemo ? <Lock size={20} color="#fff" /> : <BarChart3 size={20} color="#fff" />}
           </div>
-          <div className="flex-1 flex flex-col">
-            <span className="text-base font-extrabold text-[#0A7A42]">Performance IA · Quinté+</span>
-            <span className="text-sm text-[#10B981] font-semibold mt-0.5">
+          <div className="flex-1 flex flex-col text-left">
+            <span className="text-base font-black text-white group-hover:text-[#10B981] transition-colors">Performance IA · Quinté+</span>
+            <span className="text-xs text-gray-400 font-semibold mt-0.5">
               {isDemo
                 ? "Verrouillé · Débloquer l'accès complet"
                 : perf && perf.races
@@ -88,13 +88,13 @@ export default function Pronostics() {
                 : "Fiabilité sur la course du Quinté+"}
             </span>
           </div>
-          <ChevronRight size={18} color="#8E8E93" />
+          <ChevronRight size={20} className="text-gray-500 group-hover:text-white transition-colors" />
         </button>
         
         <DatePicker selected={date} onSelect={setDate} />
       </div>
 
-      <div className="flex-1 overflow-y-auto p-5 pb-24">
+      <div className="flex-1 p-6 pb-24 max-w-3xl mx-auto w-full">
         {loading ? (
           <Loader label="Chargement des courses..." />
         ) : error ? (
@@ -102,17 +102,17 @@ export default function Pronostics() {
         ) : flat.length === 0 ? (
           <EmptyState icon="Trophy" title="Aucune course" subtitle="Aucune course à cette date." />
         ) : (
-          <div className="flex flex-col gap-4">
+          <div className="flex flex-col gap-4 mt-2">
             {isDemo && (
               <button
                 onClick={() => router.push("/paywall")}
-                className="flex flex-row items-center gap-3 bg-[#FEF3C7] rounded-lg border border-[#FDE68A] p-3 mb-1 transition-colors hover:bg-[#FDE68A]"
+                className="flex flex-row items-center gap-3 bg-gradient-to-r from-[#FDE68A]/10 to-[#F5C518]/10 rounded-2xl border border-[#F5C518]/30 p-4 mb-2 transition-all hover:bg-[#FDE68A]/20"
               >
-                <PlayCircle size={18} color="#7A5200" className="shrink-0" />
-                <span className="flex-1 text-sm font-bold text-[#7A5200] text-left">
-                  Mode démo · 3 courses. Touchez pour débloquer tout.
+                <PlayCircle size={22} className="text-[#F5C518] shrink-0" />
+                <span className="flex-1 text-sm font-bold text-[#F5C518] text-left">
+                  Mode démo · 3 courses. Touchez pour débloquer.
                 </span>
-                <LockOpen size={16} color="#7A5200" className="shrink-0" />
+                <LockOpen size={18} className="text-[#F5C518] shrink-0" />
               </button>
             )}
 

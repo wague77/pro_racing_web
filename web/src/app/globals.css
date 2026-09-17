@@ -2,6 +2,8 @@
 
 @theme {
   --animate-shake: shake 0.5s cubic-bezier(.36,.07,.19,.97) both;
+  --animate-fade-in: fadeIn 0.4s ease-out forwards;
+  --animate-slide-up: slideUp 0.5s cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }
 
 @keyframes shake {
@@ -11,8 +13,41 @@
   40%, 60% { transform: translate3d(4px, 0, 0); }
 }
 
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes slideUp {
+  from { opacity: 0; transform: translateY(20px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@layer base {
+  body {
+    @apply bg-[#0A0A0C] text-gray-100;
+    font-feature-settings: "rlig" 1, "calt" 1;
+  }
+}
+
 @layer utilities {
   .pb-safe {
     padding-bottom: env(safe-area-inset-bottom);
+  }
+  
+  .glass-panel {
+    @apply bg-white/5 backdrop-blur-xl border border-white/10 shadow-2xl;
+  }
+  
+  .glass-card {
+    @apply bg-[#1C1C1E]/80 backdrop-blur-md border border-white/5 shadow-xl hover:border-white/20 transition-all duration-300;
+  }
+  
+  .text-gradient {
+    @apply bg-clip-text text-transparent bg-gradient-to-r from-[#10B981] to-[#3B82F6];
+  }
+  
+  .text-gradient-gold {
+    @apply bg-clip-text text-transparent bg-gradient-to-r from-[#FDE68A] to-[#D97706];
   }
 }

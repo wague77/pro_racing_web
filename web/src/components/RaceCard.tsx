@@ -40,25 +40,25 @@ export default function RaceCard({
   return (
     <Link
       href={linkHref as any}
-      className={`flex flex-row items-center gap-4 bg-white rounded-xl p-4 shadow-sm border ${
-        quinte ? "border-[#F5C518] border-[1.5px]" : "border-transparent"
+      className={`flex flex-row items-center gap-4 glass-card rounded-2xl p-4 transition-transform hover:scale-[1.02] ${
+        quinte ? "ring-2 ring-[#F5C518]" : ""
       }`}
     >
       <div
-        className={`flex flex-col items-center justify-center w-14 py-2 rounded-xl ${
-          quinte ? "bg-[#FFF7DC]" : "bg-[#F1F1F3]"
+        className={`flex flex-col items-center justify-center w-14 py-3 rounded-xl shadow-inner ${
+          quinte ? "bg-gradient-to-b from-[#FDE68A] to-[#F5C518] text-[#7A5200]" : "bg-white/10 text-white"
         }`}
       >
-        <span className="text-lg font-extrabold text-[#1C1C1E]">C{num}</span>
+        <span className="text-lg font-black">C{num}</span>
         {course.heureDepart && (
-          <span className="text-xs font-semibold text-[#10B981] mt-0.5">{fmtHeure(course.heureDepart)}</span>
+          <span className={`text-xs font-bold mt-1 ${quinte ? "text-[#7A5200]" : "text-[#10B981]"}`}>{fmtHeure(course.heureDepart)}</span>
         )}
       </div>
 
       <div className="flex-1 min-w-0">
-        {hippoLabel && <div className="text-xs font-semibold text-[#8E8E93] mb-1">{hippoLabel}</div>}
+        {hippoLabel && <div className="text-xs font-semibold text-gray-400 mb-1">{hippoLabel}</div>}
         {quinte && (
-          <div className="flex flex-row items-center self-start gap-1 bg-[#FDE68A] px-2 py-0.5 rounded text-[10px] font-black text-[#7A5200] tracking-wide mb-1 max-w-max">
+          <div className="flex flex-row items-center self-start gap-1 bg-gradient-to-r from-[#FDE68A] to-[#F5C518] px-2.5 py-1 rounded-md text-[10px] font-black text-[#7A5200] tracking-wider mb-1 max-w-max shadow-sm">
             <svg
               width="12"
               height="12"
@@ -71,7 +71,7 @@ export default function RaceCard({
             QUINTÉ+
           </div>
         )}
-        <h3 className="text-lg font-bold text-[#1C1C1E] truncate">
+        <h3 className="text-lg font-bold text-white truncate">
           {course.libelle || course.libelleCourt}
         </h3>
         <div className="flex flex-row flex-wrap gap-2 mt-2">
@@ -89,14 +89,14 @@ export default function RaceCard({
             e.stopPropagation();
             onToggleFav(e);
           }}
-          className="p-2"
+          className="p-3 bg-white/5 hover:bg-white/10 rounded-full transition-colors"
         >
           <svg
             width="22"
             height="22"
             viewBox="0 0 24 24"
-            fill={isFav ? "#FF3B30" : "none"}
-            stroke={isFav ? "#FF3B30" : "#8E8E93"}
+            fill={isFav ? "#EF4444" : "none"}
+            stroke={isFav ? "#EF4444" : "#9CA3AF"}
             strokeWidth="2"
             strokeLinecap="round"
             strokeLinejoin="round"
@@ -105,18 +105,20 @@ export default function RaceCard({
           </svg>
         </button>
       ) : (
-        <svg
-          width="20"
-          height="20"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="#8E8E93"
-          strokeWidth="2"
-          strokeLinecap="round"
-          strokeLinejoin="round"
-        >
-          <polyline points="9 18 15 12 9 6"></polyline>
-        </svg>
+        <div className="p-2 bg-white/5 rounded-full">
+          <svg
+            width="20"
+            height="20"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="#9CA3AF"
+            strokeWidth="2.5"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          >
+            <polyline points="9 18 15 12 9 6"></polyline>
+          </svg>
+        </div>
       )}
     </Link>
   );

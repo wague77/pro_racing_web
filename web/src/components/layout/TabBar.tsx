@@ -18,23 +18,23 @@ export function TabBar() {
   return (
     <div
       style={{
-        backgroundColor: "rgba(255,255,255,0.85)",
+        backgroundColor: "rgba(28, 28, 30, 0.85)",
         backdropFilter: "blur(20px)",
         WebkitBackdropFilter: "blur(20px)",
         borderTop: `0.5px solid ${T.color.border}`,
       }}
-      className="fixed bottom-0 w-full h-[60px] pb-safe pt-2 px-4 flex justify-around items-center z-50 md:hidden"
+      className="fixed bottom-0 w-full h-[60px] pb-safe pt-2 px-4 flex justify-around items-center z-50 md:hidden glass-panel"
     >
       {tabs.map((tab) => {
         const isActive = pathname === tab.href;
         const Icon = tab.icon;
-        const color = isActive ? T.color.brand : T.color.muted;
+        const color = isActive ? T.color.brand : T.color.onSurfaceTertiary;
 
         return (
           <Link
             key={tab.name}
             href={tab.href}
-            className="flex flex-col items-center justify-center w-16"
+            className="flex flex-col items-center justify-center w-16 transition-transform hover:scale-105 active:scale-95"
           >
             <Icon size={24} color={color} strokeWidth={isActive ? 2.5 : 2} />
             <span
@@ -61,21 +61,22 @@ export function Sidebar() {
       }}
       className="hidden md:flex flex-col w-64 h-screen fixed left-0 top-0 py-8 px-4 z-50"
     >
-      <div className="text-2xl font-bold mb-8 px-4" style={{ color: T.color.brand }}>
+      <div className="text-2xl font-black mb-8 px-4 text-gradient flex items-center gap-3">
+        <Trophy size={28} className="text-[#10B981]" />
         Pro-Racing
       </div>
       <div className="flex flex-col space-y-2">
         {tabs.map((tab) => {
           const isActive = pathname === tab.href;
           const Icon = tab.icon;
-          const color = isActive ? T.color.brand : T.color.onSurfaceTertiary;
-          const bg = isActive ? T.color.brandSecondary : "transparent";
+          const color = isActive ? T.color.brand : T.color.onSurface;
+          const bg = isActive ? "rgba(16, 185, 129, 0.1)" : "transparent";
 
           return (
             <Link
               key={tab.name}
               href={tab.href}
-              className="flex items-center px-4 py-3 rounded-lg transition-colors"
+              className="flex items-center px-4 py-3 rounded-xl transition-all duration-300 hover:bg-white/5"
               style={{ backgroundColor: bg, color }}
             >
               <Icon size={24} color={color} strokeWidth={isActive ? 2.5 : 2} className="mr-3" />
