@@ -297,14 +297,28 @@ export default function Compte() {
           </div>
         ) : (
           <>
+            <div className="bg-gradient-to-br from-[#10B981] to-[#047857] rounded-xl p-6 mb-8 text-white shadow-[0_4px_20px_rgba(16,185,129,0.2)]">
+              <h3 className="text-2xl font-black mb-2 flex items-center gap-2">
+                Bienvenue, Administrateur <span className="text-xl">👑</span>
+              </h3>
+              <p className="text-green-50 text-sm font-medium leading-relaxed">
+                Vous êtes sur votre espace de contrôle. Générez des codes d'accès, ajustez l'IA ou activez le mode démo en un clin d'œil.
+              </p>
+            </div>
+
             <div className="mb-6">
               <h3 className="text-xs font-bold text-gray-500 mb-2 uppercase tracking-wider">Mode Démo</h3>
               <div className="bg-white rounded-xl shadow-sm p-5 flex flex-col gap-3">
                 <div className="flex justify-between items-center">
                   <div>
                     <h4 className="font-extrabold text-gray-900 text-base">Accès public gratuit</h4>
-                    <p className="text-sm text-gray-500 mt-1">
-                      {freeAccess?.active ? "Le mode démo est actuellement activé." : "Le mode démo est désactivé."}
+                    <p className="text-sm text-gray-500 mt-1 flex flex-col">
+                      <span>{freeAccess?.active ? "Le mode démo est actuellement activé." : "Le mode démo est désactivé."}</span>
+                      {freeAccess?.active && (
+                        <span className="font-bold text-[#10B981]">
+                          Date d'expiration : {freeAccess.expires_at ? new Date(freeAccess.expires_at).toLocaleString("fr-FR", { dateStyle: "short", timeStyle: "short" }) : "Illimité"}
+                        </span>
+                      )}
                     </p>
                   </div>
                   <button
