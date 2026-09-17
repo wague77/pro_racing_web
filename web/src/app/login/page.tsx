@@ -4,6 +4,7 @@ import React, { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Award, PlayCircle, Loader2, Lock, KeyRound } from "lucide-react";
 import { useAuth } from "@/lib/auth";
+import { api } from "@/lib/api";
 import { IMAGES } from "@/lib/theme";
 
 export default function Login() {
