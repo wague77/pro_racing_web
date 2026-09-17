@@ -177,21 +177,20 @@ async def require_user(creds: HTTPAuthorizationCredentials = Depends(security)) 
     role = payload.get("role")
     code = payload.get("code")
 
-    if role == "user":
-        if code == "ACCÈS LIBRE":
-            state = await free_access_state()
-            if not state["active"]:
-                raise HTTPException(status_code=401, detail="L'accès libre a été désactivé")
-        elif code and code not in ("DEMO", "IAP"):
-            code_id = payload.get("sub")
-            try:
-                from bson import ObjectId
-                oid = ObjectId(code_id)
-                code_doc = await db.access_codes.find_one({"_id": oid})
-                if not code_doc or not code_doc.get("active"):
-                    raise HTTPException(status_code=401, detail="Code d'accès révoqué ou supprimé")
-            except Exception:
-                raise HTTPException(status_code=401, detail="Token invalide")
+    if role == "demo" or (role == "user" and code == "ACCÈS LIBRE"):
+        state = await free_access_state()
+        if not state["active"]:
+            raise HTTPException(status_code=401, detail="Le mode démo a été désactivé")
+    elif role == "user" and code and code not in ("DEMO", "IAP"):
+        code_id = payload.get("sub")
+        try:
+            from bson import ObjectId
+            oid = ObjectId(code_id)
+            code_doc = await db.access_codes.find_one({"_id": oid})
+            if not code_doc or not code_doc.get("active"):
+                raise HTTPException(status_code=401, detail="Code d'accès révoqué ou supprimé")
+        except Exception:
+            raise HTTPException(status_code=401, detail="Token invalide")
 
     return payload
 
@@ -903,6 +902,9 @@ async def redeem_code(body: RedeemRequest):
 @api_router.post("/auth/demo", response_model=TokenResponse)
 async def demo_login():
     """Mode démo gratuit : accès limité sans code (3 courses, fonctions premium verrouillées)."""
+    state = await free_access_state()
+    if not state["active"]:
+        raise HTTPException(status_code=400, detail="Le mode démo est actuellement désactivé")
     token = create_token("demo", "demo", {"code": "DEMO"})
     return TokenResponse(access_token=token, role="demo")
 
