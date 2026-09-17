@@ -2,8 +2,9 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Calendar, Trophy, Heart, User } from "lucide-react";
+import { Calendar, Trophy, Heart, User, LogIn, LogOut } from "lucide-react";
 import { T } from "@/lib/theme";
+import { useAuth } from "@/lib/auth";
 
 const tabs = [
   { name: "Réunions", href: "/", icon: Calendar },
@@ -52,6 +53,7 @@ export function TabBar() {
 
 export function Sidebar() {
   const pathname = usePathname();
+  const { token, signOut } = useAuth();
 
   return (
     <div
@@ -65,7 +67,7 @@ export function Sidebar() {
         <Trophy size={28} className="text-[#10B981]" />
         Pro-Racing
       </div>
-      <div className="flex flex-col space-y-2">
+      <div className="flex flex-col space-y-2 flex-1">
         {tabs.map((tab) => {
           const isActive = pathname === tab.href;
           const Icon = tab.icon;
@@ -84,6 +86,26 @@ export function Sidebar() {
             </Link>
           );
         })}
+      </div>
+      
+      <div className="mt-auto pt-4 border-t border-white/5">
+        {token ? (
+          <button
+            onClick={() => signOut()}
+            className="w-full flex items-center px-4 py-3 rounded-xl text-red-500 hover:bg-red-500/10 transition-colors"
+          >
+            <LogOut size={24} className="mr-3" />
+            <span className="font-semibold">Déconnexion</span>
+          </button>
+        ) : (
+          <Link
+            href="/login"
+            className="w-full flex items-center px-4 py-3 rounded-xl text-gray-300 hover:bg-white/5 transition-colors"
+          >
+            <LogIn size={24} className="mr-3" />
+            <span className="font-semibold">Connexion</span>
+          </Link>
+        )}
       </div>
     </div>
   );

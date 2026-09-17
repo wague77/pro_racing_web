@@ -111,4 +111,6 @@ export const api = {
     req(`/admin/access-codes/${id}/revoke`, { method: "POST", token }),
   activateCode: (id: string, token: string) =>
     req(`/admin/access-codes/${id}/activate`, { method: "POST", token }),
+  deleteCode: (id: string, token: string) =>
+    req(`/admin/access-codes/${id}`, { method: "DELETE", token }),
 };

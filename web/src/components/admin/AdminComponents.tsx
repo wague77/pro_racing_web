@@ -4,7 +4,7 @@ import React, { useState } from "react";
 import dayjs from "dayjs";
 import relativeTime from "dayjs/plugin/relativeTime";
 import "dayjs/locale/fr";
-import { Plus, Minus, Smartphone, MonitorSmartphone, Copy, Check, Trash2 } from "lucide-react";
+import { Plus, Minus, Smartphone, MonitorSmartphone, Copy, Check, Trash2, Lock, Unlock } from "lucide-react";
 
 dayjs.extend(relativeTime);
 dayjs.locale("fr");
@@ -271,11 +271,15 @@ export function AccessCodesManager({
   busy,
   onCreate,
   onRevoke,
+  onActivate,
+  onDelete,
 }: {
   codes: any[];
   busy: boolean;
   onCreate: (dateStr: string) => void;
   onRevoke: (id: string) => void;
+  onActivate: (id: string) => void;
+  onDelete: (id: string) => void;
 }) {
   const [copiedId, setCopiedId] = useState<string | null>(null);
   const [expiryDate, setExpiryDate] = useState<string>(
@@ -321,8 +325,8 @@ export function AccessCodesManager({
                 <span className="text-xs text-gray-500 mt-1">
                   Expire le : {dayjs(c.expires_at).format("DD/MM/YYYY")}
                 </span>
-                <span className={`text-[10px] font-bold uppercase mt-1 ${c.is_active ? "text-green-500" : "text-red-500"}`}>
-                  {c.is_active ? "Actif" : "Révoqué"}
+                <span className={`text-[10px] font-bold uppercase mt-1 ${c.active ? "text-green-500" : "text-orange-500"}`}>
+                  {c.active ? "Actif" : "Bloqué"}
                 </span>
               </div>
               
@@ -330,17 +334,34 @@ export function AccessCodesManager({
                 <button
                   onClick={() => handleCopy(c.code, c.id)}
                   className="p-2 rounded bg-gray-100 text-gray-600 hover:bg-gray-200 transition-colors"
+                  title="Copier"
                 >
                   {copiedId === c.id ? <Check size={16} className="text-green-500" /> : <Copy size={16} />}
                 </button>
-                {c.is_active && (
+                {c.active ? (
                   <button
                     onClick={() => onRevoke(c.id)}
-                    className="p-2 rounded bg-red-50 text-red-500 hover:bg-red-100 transition-colors"
+                    className="p-2 rounded bg-orange-50 text-orange-500 hover:bg-orange-100 transition-colors"
+                    title="Bloquer"
                   >
-                    <Trash2 size={16} />
+                    <Lock size={16} />
+                  </button>
+                ) : (
+                  <button
+                    onClick={() => onActivate(c.id)}
+                    className="p-2 rounded bg-green-50 text-green-500 hover:bg-green-100 transition-colors"
+                    title="Débloquer"
+                  >
+                    <Unlock size={16} />
                   </button>
                 )}
+                <button
+                  onClick={() => onDelete(c.id)}
+                  className="p-2 rounded bg-red-50 text-red-500 hover:bg-red-100 transition-colors"
+                  title="Supprimer"
+                >
+                  <Trash2 size={16} />
+                </button>
               </div>
             </div>
           ))}

@@ -42,6 +42,9 @@ export default function Compte() {
   const [codes, setCodes] = useState<any[]>([]);
   const [codesBusy, setCodesBusy] = useState(false);
 
+  const [freeAccess, setFreeAccess] = useState<{enabled: boolean; expires_at: string | null} | null>(null);
+  const [freeAccessBusy, setFreeAccessBusy] = useState(false);
+
   const loadMe = useCallback(async () => {
     if (!token) return;
     try {
@@ -93,9 +96,19 @@ export default function Compte() {
     }
   }, [adminToken]);
 
+  const loadFreeAccess = useCallback(async () => {
+    try {
+      const res = await api.freeAccessStatus();
+      setFreeAccess(res);
+    } catch {
+      /* ignore */
+    }
+  }, []);
+
   useEffect(() => {
     loadMe();
-  }, [loadMe]);
+    loadFreeAccess();
+  }, [loadMe, loadFreeAccess]);
 
   useEffect(() => {
     if (adminToken) {
@@ -174,6 +187,43 @@ export default function Compte() {
     }
   };
 
+  const activateCode = async (id: string) => {
+    if (!adminToken) return;
+    setActionErr(null);
+    try {
+      await api.activateCode(id, adminToken);
+      await loadCodes();
+    } catch (e: any) {
+      setActionErr(e.message);
+    }
+  };
+
+  const deleteCode = async (id: string) => {
+    if (!adminToken) return;
+    if (!window.confirm("Êtes-vous sûr de vouloir supprimer ce code définitivement ?")) return;
+    setActionErr(null);
+    try {
+      await api.deleteCode(id, adminToken);
+      await loadCodes();
+    } catch (e: any) {
+      setActionErr(e.message);
+    }
+  };
+
+  const toggleFreeAccess = async () => {
+    if (!adminToken) return;
+    setFreeAccessBusy(true);
+    setActionErr(null);
+    try {
+      await api.setFreeAccess(!freeAccess?.enabled, null, adminToken);
+      await loadFreeAccess();
+    } catch (e: any) {
+      setActionErr(e.message);
+    } finally {
+      setFreeAccessBusy(false);
+    }
+  };
+
   const doLogin = async (e?: React.FormEvent) => {
     e?.preventDefault();
     if (!password.trim()) return;
@@ -247,7 +297,28 @@ export default function Compte() {
           </div>
         ) : (
           <>
-            <AccessCodesManager codes={codes} busy={codesBusy} onCreate={createCode} onRevoke={revokeCode} />
+            <div className="mb-6">
+              <h3 className="text-xs font-bold text-gray-500 mb-2 uppercase tracking-wider">Mode Démo</h3>
+              <div className="bg-white rounded-xl shadow-sm p-5 flex flex-col gap-3">
+                <div className="flex justify-between items-center">
+                  <div>
+                    <h4 className="font-extrabold text-gray-900 text-base">Accès public gratuit</h4>
+                    <p className="text-sm text-gray-500 mt-1">
+                      {freeAccess?.enabled ? "Le mode démo est actuellement activé." : "Le mode démo est désactivé."}
+                    </p>
+                  </div>
+                  <button
+                    disabled={freeAccessBusy}
+                    onClick={toggleFreeAccess}
+                    className={`px-4 py-2 rounded-lg font-bold text-sm transition-colors ${freeAccess?.enabled ? "bg-red-50 text-red-600 hover:bg-red-100" : "bg-[#10B981] text-white hover:bg-green-600"} ${freeAccessBusy ? "opacity-50" : ""}`}
+                  >
+                    {freeAccess?.enabled ? "Désactiver" : "Activer"}
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            <AccessCodesManager codes={codes} busy={codesBusy} onCreate={createCode} onRevoke={revokeCode} onActivate={activateCode} onDelete={deleteCode} />
 
             <AnalysisConfig cfg={analysisCfg} busy={cfgBusy} onStep={stepCfg} onSave={saveAnalysisCfg} />
 

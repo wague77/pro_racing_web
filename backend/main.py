@@ -1131,6 +1131,15 @@ async def activate_code(code_id: str, _admin: dict = Depends(require_admin)):
     return AccessCodeOut(**doc)
 
 
+@api_router.delete("/admin/access-codes/{code_id}")
+async def delete_code(code_id: str, _admin: dict = Depends(require_admin)):
+    oid = ObjectId(code_id)
+    res = await db.access_codes.delete_one({"_id": oid})
+    if res.deleted_count == 0:
+        raise HTTPException(status_code=404, detail="Code introuvable")
+    return {"status": "ok"}
+
+
 # ---------------------------------------------------------------------------
 # Appareils / installations
 # ---------------------------------------------------------------------------
