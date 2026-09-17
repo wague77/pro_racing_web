@@ -22,9 +22,11 @@ export default function Login() {
   const [mode, setMode] = useState<"code" | "admin">("code");
 
   const [loginCfg, setLoginCfg] = useState<{payment_link: string; show_demo_button: boolean} | null>(null);
+  const [freeAccess, setFreeAccess] = useState<{active: boolean} | null>(null);
 
   useEffect(() => {
     api.getLoginConfig().then(setLoginCfg).catch(() => {});
+    api.freeAccessStatus().then(setFreeAccess).catch(() => {});
   }, []);
 
   useEffect(() => {
@@ -174,7 +176,7 @@ export default function Login() {
           {loading ? <Loader2 className="animate-spin" /> : "Se connecter"}
         </button>
 
-        {(loginCfg?.show_demo_button ?? true) && (
+        {(loginCfg?.show_demo_button !== false && freeAccess?.active !== false) && (
           <>
             <div className="flex items-center gap-4 mt-8">
               <div className="flex-1 h-[1px] bg-white/10" />
