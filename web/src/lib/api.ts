@@ -1,4 +1,4 @@
-const BASE = process.env.NEXT_PUBLIC_BACKEND_URL || "https://pro-racing-api-production.up.railway.app";
+const BASE = process.env.NODE_ENV === "production" ? "https://pro-racing-api-production.up.railway.app" : (process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:8000");
 
 type Opts = {
   method?: string;
