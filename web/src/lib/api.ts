@@ -1,4 +1,4 @@
-const BASE = process.env.NEXT_PUBLIC_BACKEND_URL;
+const BASE = process.env.NEXT_PUBLIC_BACKEND_URL || "https://pro-racing-api-production.up.railway.app";
 
 type Opts = {
   method?: string;
