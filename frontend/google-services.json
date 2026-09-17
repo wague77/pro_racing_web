@@ -1,0 +1,32 @@
+{
+  "project_info": {
+    "project_number": "906627974968",
+    "project_id": "emergent-66fb6",
+    "storage_bucket": "emergent-66fb6.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:906627974968:android:f4d79ffbd96eaee3e8a3cd",
+        "android_client_info": {
+          "package_name": "com.emergent.pmupredictor.mh7rhy"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBOuS2qpRAeIsV2_VctOPSat1x-INCyOZ0"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
+
+
+################################################################################

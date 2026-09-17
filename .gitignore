@@ -1,0 +1,8 @@
+.env
+backend/.env
+frontend/.env
+PRO_RACING_STATS_SOURCE.txt
+node_modules/
+.next/
+web/.next/
+web/node_modules/
