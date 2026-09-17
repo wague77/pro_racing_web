@@ -137,15 +137,23 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       }
     };
     check();
-    const interval = setInterval(check, 60000);
+    const interval = setInterval(check, 10000);
     
     const onFocus = () => check();
     window.addEventListener("focus", onFocus);
+    
+    const onAuthError = async (e: Event) => {
+      const msg = (e as CustomEvent).detail;
+      setExpiredNotice(msg || "Votre session a été fermée");
+      await signOut();
+    };
+    window.addEventListener("auth-error", onAuthError);
     
     return () => {
       cancelled = true;
       clearInterval(interval);
       window.removeEventListener("focus", onFocus);
+      window.removeEventListener("auth-error", onAuthError);
     };
   }, [token, signOut]);
 

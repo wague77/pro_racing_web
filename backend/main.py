@@ -172,7 +172,28 @@ def decode_token(token: str) -> dict:
 async def require_user(creds: HTTPAuthorizationCredentials = Depends(security)) -> dict:
     if creds is None:
         raise HTTPException(status_code=401, detail="Authentification requise")
-    return decode_token(creds.credentials)
+    payload = decode_token(creds.credentials)
+    
+    role = payload.get("role")
+    code = payload.get("code")
+
+    if role == "user":
+        if code == "ACCÈS LIBRE":
+            state = await free_access_state()
+            if not state["active"]:
+                raise HTTPException(status_code=401, detail="L'accès libre a été désactivé")
+        elif code and code not in ("DEMO", "IAP"):
+            code_id = payload.get("sub")
+            try:
+                from bson import ObjectId
+                oid = ObjectId(code_id)
+                code_doc = await db.access_codes.find_one({"_id": oid})
+                if not code_doc or not code_doc.get("active"):
+                    raise HTTPException(status_code=401, detail="Code d'accès révoqué ou supprimé")
+            except Exception:
+                raise HTTPException(status_code=401, detail="Token invalide")
+
+    return payload
 
 
 async def require_admin(creds: HTTPAuthorizationCredentials = Depends(security)) -> dict:

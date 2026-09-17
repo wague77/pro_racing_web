@@ -30,6 +30,9 @@ async function req(path: string, opts: Opts = {}) {
   
   if (!res.ok) {
     const msg = (data && (data.detail || data.message)) || `Erreur ${res.status}`;
+    if (res.status === 401 && typeof window !== "undefined") {
+      window.dispatchEvent(new CustomEvent("auth-error", { detail: msg }));
+    }
     const err: any = new Error(typeof msg === "string" ? msg : "Erreur serveur");
     err.status = res.status;
     throw err;
