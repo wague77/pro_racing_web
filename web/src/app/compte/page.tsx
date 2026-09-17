@@ -42,7 +42,7 @@ export default function Compte() {
   const [codes, setCodes] = useState<any[]>([]);
   const [codesBusy, setCodesBusy] = useState(false);
 
-  const [freeAccess, setFreeAccess] = useState<{enabled: boolean; expires_at: string | null} | null>(null);
+  const [freeAccess, setFreeAccess] = useState<{active: boolean; expires_at: string | null} | null>(null);
   const [freeAccessBusy, setFreeAccessBusy] = useState(false);
 
   const loadMe = useCallback(async () => {
@@ -215,7 +215,7 @@ export default function Compte() {
     setFreeAccessBusy(true);
     setActionErr(null);
     try {
-      await api.setFreeAccess(!freeAccess?.enabled, null, adminToken);
+      await api.setFreeAccess(!freeAccess?.active, null, adminToken);
       await loadFreeAccess();
     } catch (e: any) {
       setActionErr(e.message);
@@ -304,15 +304,15 @@ export default function Compte() {
                   <div>
                     <h4 className="font-extrabold text-gray-900 text-base">Accès public gratuit</h4>
                     <p className="text-sm text-gray-500 mt-1">
-                      {freeAccess?.enabled ? "Le mode démo est actuellement activé." : "Le mode démo est désactivé."}
+                      {freeAccess?.active ? "Le mode démo est actuellement activé." : "Le mode démo est désactivé."}
                     </p>
                   </div>
                   <button
                     disabled={freeAccessBusy}
                     onClick={toggleFreeAccess}
-                    className={`px-4 py-2 rounded-lg font-bold text-sm transition-colors ${freeAccess?.enabled ? "bg-red-50 text-red-600 hover:bg-red-100" : "bg-[#10B981] text-white hover:bg-green-600"} ${freeAccessBusy ? "opacity-50" : ""}`}
+                    className={`px-4 py-2 rounded-lg font-bold text-sm transition-colors ${freeAccess?.active ? "bg-red-50 text-red-600 hover:bg-red-100" : "bg-[#10B981] text-white hover:bg-green-600"} ${freeAccessBusy ? "opacity-50" : ""}`}
                   >
-                    {freeAccess?.enabled ? "Désactiver" : "Activer"}
+                    {freeAccess?.active ? "Désactiver" : "Activer"}
                   </button>
                 </div>
               </div>
