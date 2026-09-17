@@ -2,7 +2,7 @@
 
 import React, { useCallback, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { User, LogOut } from "lucide-react";
+import { User, LogOut, Eye, EyeOff } from "lucide-react";
 import { api } from "@/lib/api";
 import { useAuth } from "@/lib/auth";
 
@@ -253,6 +253,22 @@ export default function Compte() {
     }
   };
 
+  const toggleDemoButton = async () => {
+    if (!adminToken) return;
+    const currentCfg = loginConfig || { payment_link: "", show_demo_button: true };
+    const updatedCfg = { ...currentCfg, show_demo_button: !currentCfg.show_demo_button };
+    setLoginConfigBusy(true);
+    setActionErr(null);
+    try {
+      const res = await api.setLoginConfig(updatedCfg, adminToken);
+      setLoginConfig(res);
+    } catch (err: any) {
+      setActionErr(err.message);
+    } finally {
+      setLoginConfigBusy(false);
+    }
+  };
+
   const doLogin = async (e?: React.FormEvent) => {
     e?.preventDefault();
     if (!password.trim()) return;
@@ -336,8 +352,8 @@ export default function Compte() {
             </div>
 
             <div className="mb-6">
-              <h3 className="text-xs font-bold text-gray-500 mb-2 uppercase tracking-wider">Mode Démo</h3>
-              <div className="bg-white rounded-xl shadow-sm p-5 flex flex-col gap-3">
+              <h3 className="text-xs font-bold text-gray-500 mb-2 uppercase tracking-wider">Mode Démo & Bouton Connexion</h3>
+              <div className="bg-white rounded-xl shadow-sm p-5 flex flex-col gap-4">
                 <div className="flex justify-between items-center">
                   <div>
                     <h4 className="font-extrabold text-gray-900 text-base">Accès public gratuit</h4>
@@ -356,6 +372,38 @@ export default function Compte() {
                     className={`px-4 py-2 rounded-lg font-bold text-sm transition-colors ${freeAccess?.active ? "bg-red-50 text-red-600 hover:bg-red-100" : "bg-[#10B981] text-white hover:bg-green-600"} ${freeAccessBusy ? "opacity-50" : ""}`}
                   >
                     {freeAccess?.active ? "Désactiver" : "Activer"}
+                  </button>
+                </div>
+
+                <div className="border-t border-gray-100 pt-4 flex justify-between items-center">
+                  <div>
+                    <h4 className="font-extrabold text-gray-900 text-base">Bouton « Mode Démo » (Page Connexion)</h4>
+                    <p className="text-sm text-gray-500 mt-0.5">
+                      {loginConfig?.show_demo_button ?? true
+                        ? "Le bouton 'Essayer en mode démo' est actuellement visible."
+                        : "Le bouton 'Essayer en mode démo' est actuellement masqué."}
+                    </p>
+                  </div>
+                  <button
+                    disabled={loginConfigBusy}
+                    onClick={toggleDemoButton}
+                    className={`px-4 py-2 rounded-lg font-bold text-sm transition-all flex items-center gap-2 ${
+                      (loginConfig?.show_demo_button ?? true)
+                        ? "bg-amber-50 text-amber-700 hover:bg-amber-100 border border-amber-200"
+                        : "bg-green-50 text-[#10B981] hover:bg-green-100 border border-green-200"
+                    } ${loginConfigBusy ? "opacity-50" : ""}`}
+                  >
+                    {(loginConfig?.show_demo_button ?? true) ? (
+                      <>
+                        <EyeOff size={16} />
+                        Masquer le bouton démo
+                      </>
+                    ) : (
+                      <>
+                        <Eye size={16} />
+                        Afficher le bouton démo
+                      </>
+                    )}
                   </button>
                 </div>
               </div>
