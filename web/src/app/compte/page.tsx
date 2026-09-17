@@ -45,6 +45,9 @@ export default function Compte() {
   const [freeAccess, setFreeAccess] = useState<{active: boolean; expires_at: string | null} | null>(null);
   const [freeAccessBusy, setFreeAccessBusy] = useState(false);
 
+  const [loginConfig, setLoginConfig] = useState<{payment_link: string; show_demo_button: boolean} | null>(null);
+  const [loginConfigBusy, setLoginConfigBusy] = useState(false);
+
   const loadMe = useCallback(async () => {
     if (!token) return;
     try {
@@ -105,6 +108,16 @@ export default function Compte() {
     }
   }, []);
 
+  const loadLoginConfig = useCallback(async () => {
+    if (!adminToken) return;
+    try {
+      const res = await api.getLoginConfig();
+      setLoginConfig(res);
+    } catch {
+      /* ignore */
+    }
+  }, [adminToken]);
+
   useEffect(() => {
     loadMe();
     loadFreeAccess();
@@ -116,8 +129,9 @@ export default function Compte() {
       loadDevices();
       loadAnalysisCfg();
       loadCodes();
+      loadLoginConfig();
     }
-  }, [adminToken, loadPerfConfig, loadDevices, loadAnalysisCfg, loadCodes]);
+  }, [adminToken, loadPerfConfig, loadDevices, loadAnalysisCfg, loadCodes, loadLoginConfig]);
 
   const stepCfg = (key: keyof AnalysisCfg, delta: number, min: number, max: number) => {
     setAnalysisCfg((c) => (c ? { ...c, [key]: Math.min(max, Math.max(min, +(c[key] + delta).toFixed(1))) } : c));
@@ -221,6 +235,21 @@ export default function Compte() {
       setActionErr(e.message);
     } finally {
       setFreeAccessBusy(false);
+    }
+  };
+
+  const updateLoginConfig = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!adminToken || !loginConfig) return;
+    setLoginConfigBusy(true);
+    setActionErr(null);
+    try {
+      const res = await api.setLoginConfig(loginConfig, adminToken);
+      setLoginConfig(res);
+    } catch (err: any) {
+      setActionErr(err.message);
+    } finally {
+      setLoginConfigBusy(false);
     }
   };
 
@@ -331,6 +360,49 @@ export default function Compte() {
                 </div>
               </div>
             </div>
+
+            {loginConfig && (
+              <div className="mb-6">
+                <h3 className="text-xs font-bold text-gray-500 mb-2 uppercase tracking-wider">Page de connexion</h3>
+                <form onSubmit={updateLoginConfig} className="bg-white rounded-xl shadow-sm p-5 flex flex-col gap-4">
+                  <div>
+                    <h4 className="font-extrabold text-gray-900 text-sm mb-2">Lien de paiement (S'abonner)</h4>
+                    <input
+                      type="url"
+                      placeholder="https://..."
+                      value={loginConfig.payment_link}
+                      onChange={(e) => setLoginConfig({ ...loginConfig, payment_link: e.target.value })}
+                      className="w-full bg-gray-50 border border-gray-200 rounded-lg px-3 py-2 text-sm text-gray-900 outline-none focus:border-[#10B981]"
+                    />
+                    <p className="text-xs text-gray-400 mt-1">Laissez vide pour masquer le bouton "S'abonner".</p>
+                  </div>
+                  <div className="flex items-center justify-between border-t border-gray-100 pt-4">
+                    <div>
+                      <h4 className="font-extrabold text-gray-900 text-sm">Bouton "Mode Démo"</h4>
+                      <p className="text-xs text-gray-400 mt-0.5">Afficher le bouton "Essayer en mode démo" sur la page de connexion.</p>
+                    </div>
+                    <label className="relative inline-flex items-center cursor-pointer">
+                      <input 
+                        type="checkbox" 
+                        className="sr-only peer"
+                        checked={loginConfig.show_demo_button}
+                        onChange={(e) => setLoginConfig({ ...loginConfig, show_demo_button: e.target.checked })}
+                      />
+                      <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[#10B981]"></div>
+                    </label>
+                  </div>
+                  <div className="flex justify-end pt-2">
+                    <button
+                      type="submit"
+                      disabled={loginConfigBusy}
+                      className="bg-[#10B981] hover:bg-green-600 text-white font-bold px-4 py-2 rounded-lg text-sm transition-colors disabled:opacity-50"
+                    >
+                      {loginConfigBusy ? "Enregistrement..." : "Enregistrer"}
+                    </button>
+                  </div>
+                </form>
+              </div>
+            )}
 
             <AccessCodesManager codes={codes} busy={codesBusy} onCreate={createCode} onRevoke={revokeCode} onActivate={activateCode} onDelete={deleteCode} />
 

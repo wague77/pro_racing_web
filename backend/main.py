@@ -1307,6 +1307,32 @@ async def set_share_config(body: ShareConfigRequest, _admin: dict = Depends(requ
     return {"threshold": threshold}
 
 
+LOGIN_CONFIG_ID = "login_config"
+
+class LoginConfigRequest(BaseModel):
+    payment_link: str
+    show_demo_button: bool
+
+@api_router.get("/auth/login-config")
+async def get_login_config():
+    doc = await db.settings.find_one({"_id": LOGIN_CONFIG_ID})
+    if not doc:
+        return {"payment_link": "", "show_demo_button": True}
+    return {
+        "payment_link": doc.get("payment_link", ""),
+        "show_demo_button": doc.get("show_demo_button", True)
+    }
+
+@api_router.post("/admin/login-config")
+async def set_login_config(body: LoginConfigRequest, _admin: dict = Depends(require_admin)):
+    await db.settings.update_one(
+        {"_id": LOGIN_CONFIG_ID},
+        {"$set": {"payment_link": body.payment_link, "show_demo_button": body.show_demo_button, "updated_at": now_utc().isoformat()}},
+        upsert=True,
+    )
+    return {"payment_link": body.payment_link, "show_demo_button": body.show_demo_button}
+
+
 @api_router.get("/admin/sharing-alerts")
 async def sharing_alerts(_admin: dict = Depends(require_admin)):
     """Codes utilisés par un nombre d'appareils >= seuil (détection de partage)."""

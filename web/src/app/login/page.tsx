@@ -20,6 +20,12 @@ export default function Login() {
   // "code" | "admin"
   const [mode, setMode] = useState<"code" | "admin">("code");
 
+  const [loginCfg, setLoginCfg] = useState<{payment_link: string; show_demo_button: boolean} | null>(null);
+
+  useEffect(() => {
+    api.getLoginConfig().then(setLoginCfg).catch(() => {});
+  }, []);
+
   useEffect(() => {
     if (expiredNotice) {
       setError(expiredNotice);
@@ -167,24 +173,39 @@ export default function Login() {
           {loading ? <Loader2 className="animate-spin" /> : "Se connecter"}
         </button>
 
-        <div className="flex items-center gap-4 mt-8">
-          <div className="flex-1 h-[1px] bg-white/10" />
-          <span className="text-gray-500 text-sm font-semibold uppercase tracking-widest">Ou</span>
-          <div className="flex-1 h-[1px] bg-white/10" />
-        </div>
+        {(loginCfg?.show_demo_button ?? true) && (
+          <>
+            <div className="flex items-center gap-4 mt-8">
+              <div className="flex-1 h-[1px] bg-white/10" />
+              <span className="text-gray-500 text-sm font-semibold uppercase tracking-widest">Ou</span>
+              <div className="flex-1 h-[1px] bg-white/10" />
+            </div>
 
-        <button
-          onClick={submitDemo}
-          disabled={demoLoading}
-          className="w-full flex justify-center items-center gap-2 py-4 mt-6 rounded-2xl bg-white/5 text-white font-bold text-base transition-all hover:bg-white/10 active:scale-[0.98] disabled:opacity-50 border border-white/5"
-        >
-          {demoLoading ? <Loader2 className="animate-spin text-[#10B981]" /> : (
-            <>
-              <PlayCircle size={20} className="text-[#10B981]" />
-              Essayer en mode démo
-            </>
-          )}
-        </button>
+            <button
+              onClick={submitDemo}
+              disabled={demoLoading}
+              className="w-full flex justify-center items-center gap-2 py-4 mt-6 rounded-2xl bg-white/5 text-white font-bold text-base transition-all hover:bg-white/10 active:scale-[0.98] disabled:opacity-50 border border-white/5"
+            >
+              {demoLoading ? <Loader2 className="animate-spin text-[#10B981]" /> : (
+                <>
+                  <PlayCircle size={20} className="text-[#10B981]" />
+                  Essayer en mode démo
+                </>
+              )}
+            </button>
+          </>
+        )}
+
+        {loginCfg?.payment_link && (
+          <a
+            href={loginCfg.payment_link}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="w-full flex justify-center items-center py-4 mt-4 rounded-2xl bg-gradient-to-r from-orange-500 to-amber-500 text-white font-black text-base transition-all hover:scale-[1.02] active:scale-[0.98] shadow-lg shadow-orange-500/20"
+          >
+            S'abonner maintenant
+          </a>
+        )}
       </div>
     </div>
   );
