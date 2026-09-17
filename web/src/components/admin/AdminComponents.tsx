@@ -2,7 +2,12 @@
 
 import React, { useState } from "react";
 import dayjs from "dayjs";
-import { Plus, Minus, Smartphone, MonitorSmartphone } from "lucide-react";
+import relativeTime from "dayjs/plugin/relativeTime";
+import "dayjs/locale/fr";
+import { Plus, Minus, Smartphone, MonitorSmartphone, Copy, Check, Trash2 } from "lucide-react";
+
+dayjs.extend(relativeTime);
+dayjs.locale("fr");
 
 export type AnalysisCfg = {
   favoriMax: number;
@@ -258,3 +263,94 @@ export function PerfConfig({
   );
 }
 
+// ==========================================
+// AccessCodesManager
+// ==========================================
+export function AccessCodesManager({
+  codes,
+  busy,
+  onCreate,
+  onRevoke,
+}: {
+  codes: any[];
+  busy: boolean;
+  onCreate: (days: number) => void;
+  onRevoke: (id: string) => void;
+}) {
+  const [copiedId, setCopiedId] = useState<string | null>(null);
+  const [days, setDays] = useState<number>(30);
+
+  const handleCopy = (code: string, id: string) => {
+    navigator.clipboard.writeText(code);
+    setCopiedId(id);
+    setTimeout(() => setCopiedId(null), 2000);
+  };
+
+  return (
+    <div className="mb-6">
+      <h3 className="text-xs font-bold text-gray-500 mb-2 uppercase tracking-wider">Codes d'accès</h3>
+      <div className="bg-white rounded-xl shadow-sm p-5 flex flex-col gap-4">
+        
+        <div className="flex flex-col gap-3 p-4 bg-gray-50 rounded-lg border border-gray-100">
+          <h4 className="font-extrabold text-gray-900 text-sm">Générer un nouveau code</h4>
+          <div className="flex items-center gap-3">
+            <select 
+              value={days} 
+              onChange={(e) => setDays(Number(e.target.value))}
+              className="bg-white border border-gray-200 rounded-lg px-3 py-2 text-sm font-bold text-gray-900 outline-none focus:border-[#10B981]"
+            >
+              <option value={1}>1 jour</option>
+              <option value={7}>7 jours</option>
+              <option value={30}>30 jours</option>
+              <option value={90}>90 jours</option>
+              <option value={365}>1 an</option>
+            </select>
+            <button
+              disabled={busy}
+              onClick={() => onCreate(days)}
+              className="flex-1 bg-[#10B981] hover:bg-green-600 text-white font-bold py-2 rounded-lg transition-colors flex justify-center items-center gap-2"
+            >
+              <Plus size={16} /> Générer
+            </button>
+          </div>
+        </div>
+
+        <div className="flex flex-col gap-3">
+          {codes.map((c) => (
+            <div key={c.id} className="flex items-center justify-between py-3 border-b border-gray-100 last:border-0">
+              <div className="flex flex-col">
+                <span className="font-black text-lg text-gray-900 tracking-wider font-mono bg-gray-200 px-2 py-1 rounded w-fit">{c.code}</span>
+                <span className="text-xs text-gray-500 mt-1">
+                  Expire le : {dayjs(c.expires_at).format("DD/MM/YYYY")}
+                </span>
+                <span className={`text-[10px] font-bold uppercase mt-1 ${c.is_active ? "text-green-500" : "text-red-500"}`}>
+                  {c.is_active ? "Actif" : "Révoqué"}
+                </span>
+              </div>
+              
+              <div className="flex gap-2">
+                <button
+                  onClick={() => handleCopy(c.code, c.id)}
+                  className="p-2 rounded bg-gray-100 text-gray-600 hover:bg-gray-200 transition-colors"
+                >
+                  {copiedId === c.id ? <Check size={16} className="text-green-500" /> : <Copy size={16} />}
+                </button>
+                {c.is_active && (
+                  <button
+                    onClick={() => onRevoke(c.id)}
+                    className="p-2 rounded bg-red-50 text-red-500 hover:bg-red-100 transition-colors"
+                  >
+                    <Trash2 size={16} />
+                  </button>
+                )}
+              </div>
+            </div>
+          ))}
+          {codes.length === 0 && (
+            <p className="text-sm text-gray-500 text-center py-2">Aucun code généré.</p>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}

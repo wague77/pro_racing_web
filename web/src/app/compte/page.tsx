@@ -11,6 +11,7 @@ import {
   AnalysisConfig,
   DeviceList,
   PerfConfig,
+  AccessCodesManager,
 } from "@/components/admin/AdminComponents";
 
 export default function Compte() {
@@ -37,6 +38,9 @@ export default function Compte() {
 
   const [analysisCfg, setAnalysisCfg] = useState<AnalysisCfg | null>(null);
   const [cfgBusy, setCfgBusy] = useState(false);
+
+  const [codes, setCodes] = useState<any[]>([]);
+  const [codesBusy, setCodesBusy] = useState(false);
 
   const loadMe = useCallback(async () => {
     if (!token) return;
@@ -79,6 +83,16 @@ export default function Compte() {
     }
   }, [adminToken]);
 
+  const loadCodes = useCallback(async () => {
+    if (!adminToken) return;
+    try {
+      const res = await api.listCodes(adminToken);
+      setCodes(res.codes || []);
+    } catch {
+      /* ignore */
+    }
+  }, [adminToken]);
+
   useEffect(() => {
     loadMe();
   }, [loadMe]);
@@ -88,8 +102,9 @@ export default function Compte() {
       loadPerfConfig();
       loadDevices();
       loadAnalysisCfg();
+      loadCodes();
     }
-  }, [adminToken, loadPerfConfig, loadDevices, loadAnalysisCfg]);
+  }, [adminToken, loadPerfConfig, loadDevices, loadAnalysisCfg, loadCodes]);
 
   const stepCfg = (key: keyof AnalysisCfg, delta: number, min: number, max: number) => {
     setAnalysisCfg((c) => (c ? { ...c, [key]: Math.min(max, Math.max(min, +(c[key] + delta).toFixed(1))) } : c));
@@ -131,6 +146,31 @@ export default function Compte() {
       setActionErr(e.message);
     } finally {
       setPerfBusy(false);
+    }
+  };
+
+  const createCode = async (days: number) => {
+    if (!adminToken) return;
+    setCodesBusy(true);
+    setActionErr(null);
+    try {
+      await api.createCode(null, null, days, null, adminToken);
+      await loadCodes();
+    } catch (e: any) {
+      setActionErr(e.message);
+    } finally {
+      setCodesBusy(false);
+    }
+  };
+
+  const revokeCode = async (id: string) => {
+    if (!adminToken) return;
+    setActionErr(null);
+    try {
+      await api.revokeCode(id, adminToken);
+      await loadCodes();
+    } catch (e: any) {
+      setActionErr(e.message);
     }
   };
 
@@ -207,6 +247,8 @@ export default function Compte() {
           </div>
         ) : (
           <>
+            <AccessCodesManager codes={codes} busy={codesBusy} onCreate={createCode} onRevoke={revokeCode} />
+
             <AnalysisConfig cfg={analysisCfg} busy={cfgBusy} onStep={stepCfg} onSave={saveAnalysisCfg} />
 
             <DeviceList stats={deviceStats} devices={devices} onToggleDevice={toggleDevice} />
