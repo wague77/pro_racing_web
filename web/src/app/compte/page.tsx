@@ -149,12 +149,12 @@ export default function Compte() {
     }
   };
 
-  const createCode = async (days: number) => {
+  const createCode = async (dateStr: string) => {
     if (!adminToken) return;
     setCodesBusy(true);
     setActionErr(null);
     try {
-      await api.createCode(null, null, days, null, adminToken);
+      await api.createCode(null, null, null, dateStr, adminToken);
       await loadCodes();
     } catch (e: any) {
       setActionErr(e.message);

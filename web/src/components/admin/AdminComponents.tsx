@@ -274,11 +274,13 @@ export function AccessCodesManager({
 }: {
   codes: any[];
   busy: boolean;
-  onCreate: (days: number) => void;
+  onCreate: (dateStr: string) => void;
   onRevoke: (id: string) => void;
 }) {
   const [copiedId, setCopiedId] = useState<string | null>(null);
-  const [days, setDays] = useState<number>(30);
+  const [expiryDate, setExpiryDate] = useState<string>(
+    dayjs().add(30, "day").format("YYYY-MM-DD")
+  );
 
   const handleCopy = (code: string, id: string) => {
     navigator.clipboard.writeText(code);
@@ -294,20 +296,16 @@ export function AccessCodesManager({
         <div className="flex flex-col gap-3 p-4 bg-gray-50 rounded-lg border border-gray-100">
           <h4 className="font-extrabold text-gray-900 text-sm">Générer un nouveau code</h4>
           <div className="flex items-center gap-3">
-            <select 
-              value={days} 
-              onChange={(e) => setDays(Number(e.target.value))}
+            <input 
+              type="date"
+              value={expiryDate} 
+              onChange={(e) => setExpiryDate(e.target.value)}
+              min={dayjs().format("YYYY-MM-DD")}
               className="bg-white border border-gray-200 rounded-lg px-3 py-2 text-sm font-bold text-gray-900 outline-none focus:border-[#10B981]"
-            >
-              <option value={1}>1 jour</option>
-              <option value={7}>7 jours</option>
-              <option value={30}>30 jours</option>
-              <option value={90}>90 jours</option>
-              <option value={365}>1 an</option>
-            </select>
+            />
             <button
-              disabled={busy}
-              onClick={() => onCreate(days)}
+              disabled={busy || !expiryDate}
+              onClick={() => onCreate(dayjs(expiryDate).toISOString())}
               className="flex-1 bg-[#10B981] hover:bg-green-600 text-white font-bold py-2 rounded-lg transition-colors flex justify-center items-center gap-2"
             >
               <Plus size={16} /> Générer
