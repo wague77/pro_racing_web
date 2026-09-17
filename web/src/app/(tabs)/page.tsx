@@ -21,31 +21,46 @@ function MeetingCard({ reunion, date }: { reunion: any; date: dayjs.Dayjs }) {
   return (
     <Link
       href={`/meeting?date=${apiDate(date)}&reunion=${encodeURIComponent(JSON.stringify(reunion))}`}
-      className="flex items-center gap-3 bg-white rounded-xl p-4 shadow-[0_2px_8px_rgba(0,0,0,0.06)] hover:bg-[#F9FAFB] transition-colors"
+      className={`flex items-center gap-3 bg-white rounded-xl p-4 shadow-[0_2px_8px_rgba(0,0,0,0.06)] hover:shadow-[0_4px_12px_rgba(0,0,0,0.1)] transition-all ${
+        hasQuinte ? "border-l-4 border-[#F59E0B]" : "border-l-4 border-transparent"
+      }`}
     >
-      <div className="w-11 h-11 rounded-xl bg-[#E6F4EA] flex items-center justify-center flex-shrink-0">
-        <span className="text-[16px] font-extrabold text-[#0A7A42]">
+      <div className={`w-12 h-12 rounded-xl flex items-center justify-center flex-shrink-0 ${
+        hasQuinte ? "bg-gradient-to-br from-[#FEF3C7] to-[#FDE68A]" : "bg-[#E6F4EA]"
+      }`}>
+        <span className={`text-[16px] font-extrabold ${
+          hasQuinte ? "text-[#92400E]" : "text-[#0A7A42]"
+        }`}>
           R{reunion.numExterne || reunion.numOfficiel}
         </span>
       </div>
       <div className="flex-1 min-w-0">
-        <div className="flex items-center gap-2">
-          <h3 className="text-[16px] font-bold text-[#1C1C1E] truncate">
+        <div className="flex items-center gap-2 mb-1">
+          <h3 className="text-[17px] font-extrabold text-[#1C1C1E] truncate">
             {hippo.libelleCourt || hippo.libelleLong || "Réunion"}
           </h3>
           {hasQuinte && (
-            <div className="flex items-center gap-1 bg-[#FDE68A] px-1.5 py-0.5 rounded flex-shrink-0">
-              <Star size={10} color="#7A5200" fill="#7A5200" />
-              <span className="text-[9px] font-black text-[#7A5200] tracking-wider">QUINTÉ+</span>
+            <div className="flex items-center gap-1 bg-[#FDE68A] px-2 py-0.5 rounded-md flex-shrink-0 shadow-sm">
+              <Star size={12} color="#7A5200" fill="#7A5200" />
+              <span className="text-[10px] font-black text-[#7A5200] tracking-wider">QUINTÉ+</span>
             </div>
           )}
         </div>
-        <p className="text-[14px] text-[#8E8E93] mt-0.5">
-          {nb} course{nb > 1 ? "s" : ""}
-          {reunion.pays ? ` · ${reunion.pays}` : ""}
-        </p>
+        <div className="flex items-center gap-2 text-[14px] text-[#8E8E93] font-medium">
+          <span className="bg-gray-100 px-2 py-0.5 rounded text-gray-600">
+            {nb} course{nb > 1 ? "s" : ""}
+          </span>
+          {reunion.pays && (
+            <span className="flex items-center gap-1">
+              <span className="w-1 h-1 rounded-full bg-gray-300"></span>
+              {reunion.pays}
+            </span>
+          )}
+        </div>
       </div>
-      <ChevronRight size={20} color={T.color.muted} />
+      <div className="w-8 h-8 rounded-full bg-gray-50 flex items-center justify-center flex-shrink-0 group-hover:bg-gray-100 transition-colors">
+        <ChevronRight size={20} color={T.color.muted} />
+      </div>
     </Link>
   );
 }

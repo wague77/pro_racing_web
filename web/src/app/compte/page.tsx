@@ -9,12 +9,8 @@ import { useAuth } from "@/lib/auth";
 import {
   AnalysisCfg,
   AnalysisConfig,
-  SharingAlerts,
   DeviceList,
   PerfConfig,
-  FreeAccess,
-  CodeGenerator,
-  CodeList,
 } from "@/components/admin/AdminComponents";
 
 export default function Compte() {
@@ -25,17 +21,8 @@ export default function Compte() {
   const [loginLoading, setLoginLoading] = useState(false);
   const [loginErr, setLoginErr] = useState<string | null>(null);
 
-  const [codes, setCodes] = useState<any[]>([]);
-  const [codesLoading, setCodesLoading] = useState(false);
-  const [creating, setCreating] = useState(false);
   const [actionErr, setActionErr] = useState<string | null>(null);
   const [myExpiry, setMyExpiry] = useState<string | null>(null);
-
-  const [freeState, setFreeState] = useState<{ active: boolean; expires_at: string | null }>({
-    active: false,
-    expires_at: null,
-  });
-  const [freeBusy, setFreeBusy] = useState(false);
 
   const [perfDays, setPerfDays] = useState<number | null>(null);
   const [perfBusy, setPerfBusy] = useState(false);
@@ -47,9 +34,6 @@ export default function Compte() {
     ios: 0,
     web: 0,
   });
-
-  const [alerts, setAlerts] = useState<any[]>([]);
-  const [shareThreshold, setShareThreshold] = useState<number | null>(null);
 
   const [analysisCfg, setAnalysisCfg] = useState<AnalysisCfg | null>(null);
   const [cfgBusy, setCfgBusy] = useState(false);
@@ -85,17 +69,6 @@ export default function Compte() {
     }
   }, [adminToken]);
 
-  const loadAlerts = useCallback(async () => {
-    if (!adminToken) return;
-    try {
-      const res = await api.sharingAlerts(adminToken);
-      setAlerts(res.alerts || []);
-      setShareThreshold(res.threshold);
-    } catch {
-      /* ignore */
-    }
-  }, [adminToken]);
-
   const loadAnalysisCfg = useCallback(async () => {
     if (!adminToken) return;
     try {
@@ -106,43 +79,17 @@ export default function Compte() {
     }
   }, [adminToken]);
 
-  const loadFree = useCallback(async () => {
-    try {
-      const st = await api.freeAccessStatus();
-      setFreeState({ active: !!st.active, expires_at: st.expires_at || null });
-    } catch {
-      /* ignore */
-    }
-  }, []);
-
-  const loadCodes = useCallback(async () => {
-    if (!adminToken) return;
-    setCodesLoading(true);
-    try {
-      const res = await api.listCodes(adminToken);
-      setCodes(res || []);
-    } catch (e: any) {
-      setActionErr(e.message);
-    } finally {
-      setCodesLoading(false);
-    }
-  }, [adminToken]);
-
   useEffect(() => {
-    loadFree();
     loadMe();
-  }, [loadFree, loadMe]);
+  }, [loadMe]);
 
   useEffect(() => {
     if (adminToken) {
-      loadCodes();
-      loadFree();
       loadPerfConfig();
       loadDevices();
-      loadAlerts();
       loadAnalysisCfg();
     }
-  }, [adminToken, loadCodes, loadFree, loadPerfConfig, loadDevices, loadAlerts, loadAnalysisCfg]);
+  }, [adminToken, loadPerfConfig, loadDevices, loadAnalysisCfg]);
 
   const stepCfg = (key: keyof AnalysisCfg, delta: number, min: number, max: number) => {
     setAnalysisCfg((c) => (c ? { ...c, [key]: Math.min(max, Math.max(min, +(c[key] + delta).toFixed(1))) } : c));
@@ -162,23 +109,12 @@ export default function Compte() {
     }
   };
 
-  const updateThreshold = async (t: number) => {
+  const toggleDevice = async (dv: any) => {
     if (!adminToken) return;
     try {
-      const res = await api.setShareConfig(t, adminToken);
-      setShareThreshold(res.threshold);
-      await loadAlerts();
-    } catch (e: any) {
-      setActionErr(e.message);
-    }
-  };
-
-  const blockCodeDevices = async (code: string) => {
-    if (!adminToken) return;
-    try {
-      await api.blockCodeDevices(code, adminToken);
+      if (dv.blocked) await api.unblockDevice(dv.deviceId, adminToken);
+      else await api.blockDevice(dv.deviceId, adminToken);
       await loadDevices();
-      await loadAlerts();
     } catch (e: any) {
       setActionErr(e.message);
     }
@@ -198,20 +134,6 @@ export default function Compte() {
     }
   };
 
-  const updateFree = async (enabled: boolean, hours: number | null) => {
-    if (!adminToken) return;
-    setFreeBusy(true);
-    setActionErr(null);
-    try {
-      const st = await api.setFreeAccess(enabled, hours, adminToken);
-      setFreeState({ active: !!st.active, expires_at: st.expires_at || null });
-    } catch (e: any) {
-      setActionErr(e.message);
-    } finally {
-      setFreeBusy(false);
-    }
-  };
-
   const doLogin = async (e?: React.FormEvent) => {
     e?.preventDefault();
     if (!password.trim()) return;
@@ -224,48 +146,6 @@ export default function Compte() {
       setLoginErr(e.message || "Échec de connexion");
     } finally {
       setLoginLoading(false);
-    }
-  };
-
-  const createCode = async (
-    label: string | null,
-    expiresDays: number | null,
-    expiresAt: string | null
-  ): Promise<boolean> => {
-    if (!adminToken) return false;
-    setCreating(true);
-    setActionErr(null);
-    try {
-      await api.createCode(label, null, expiresDays, expiresAt, adminToken);
-      await loadCodes();
-      return true;
-    } catch (e: any) {
-      setActionErr(e.message);
-      return false;
-    } finally {
-      setCreating(false);
-    }
-  };
-
-  const toggle = async (item: any) => {
-    if (!adminToken) return;
-    try {
-      if (item.active) await api.revokeCode(item.id, adminToken);
-      else await api.activateCode(item.id, adminToken);
-      await loadCodes();
-    } catch (e: any) {
-      setActionErr(e.message);
-    }
-  };
-
-  const toggleDevice = async (dv: any) => {
-    if (!adminToken) return;
-    try {
-      if (dv.blocked) await api.unblockDevice(dv.deviceId, adminToken);
-      else await api.blockDevice(dv.deviceId, adminToken);
-      await loadDevices();
-    } catch (e: any) {
-      setActionErr(e.message);
     }
   };
 
@@ -328,26 +208,12 @@ export default function Compte() {
         ) : (
           <>
             <AnalysisConfig cfg={analysisCfg} busy={cfgBusy} onStep={stepCfg} onSave={saveAnalysisCfg} />
-            
-            <SharingAlerts
-              threshold={shareThreshold}
-              alerts={alerts}
-              onUpdateThreshold={updateThreshold}
-              onBlockCodeDevices={blockCodeDevices}
-              onRevokeCode={(codeId) => toggle({ id: codeId, active: true })}
-            />
 
             <DeviceList stats={deviceStats} devices={devices} onToggleDevice={toggleDevice} />
 
             <PerfConfig perfDays={perfDays} busy={perfBusy} onUpdate={updatePerf} />
 
-            <FreeAccess state={freeState} busy={freeBusy} onUpdate={updateFree} />
-
-            <CodeGenerator creating={creating} onCreate={createCode} />
-
             {actionErr && <p className="text-red-500 text-sm font-semibold mb-4 px-2">{actionErr}</p>}
-
-            <CodeList codes={codes} loading={codesLoading} onToggle={toggle} />
           </>
         )}
 

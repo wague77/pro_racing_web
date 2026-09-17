@@ -79,6 +79,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const res = await api.adminLogin(password);
     Cookies.set(K_ADMIN, res.access_token, { expires: 1 });
     setAdminToken(res.access_token);
+    Cookies.set(K_TOKEN, res.access_token, { expires: 1 });
+    Cookies.set(K_ROLE, res.role, { expires: 1 });
+    setToken(res.access_token);
+    setRole(res.role);
   }, []);
 
   const signOut = useCallback(async () => {

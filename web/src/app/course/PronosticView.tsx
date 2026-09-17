@@ -103,111 +103,139 @@ export function PronosticView({ selection, tocards, arrivee }: { selection: any[
       </div>
 
       {/* Top pick */}
-      <div className="bg-[#10B981] rounded-xl p-5 shadow-md mb-2">
-        <div className="flex flex-row items-center justify-between mb-4">
-          <div className="flex flex-row items-center gap-1.5 bg-black/20 px-2.5 py-1 rounded-full">
+      <div className="bg-[#10B981] rounded-xl p-5 shadow-[0_4px_16px_rgba(16,185,129,0.3)] mb-2 relative overflow-hidden">
+        <div className="absolute -right-10 -top-10 w-32 h-32 bg-white/10 rounded-full blur-2xl pointer-events-none"></div>
+        <div className="flex flex-row items-center justify-between mb-4 relative z-10">
+          <div className="flex flex-row items-center gap-1.5 bg-black/20 px-3 py-1.5 rounded-full">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="#fff"><path d="M12 15l-4.224 2.22 1.084-4.782-3.642-3.15 4.86-.425L12 4.5l1.922 4.363 4.86.425-3.642 3.15 1.084 4.782z"/></svg>
-            <span className="text-white font-bold text-sm">Favori IA</span>
+            <span className="text-white font-extrabold text-sm tracking-wide">FAVORI IA</span>
           </div>
-          <div className="px-2.5 py-1 rounded-full" style={{ backgroundColor: cat(top.categorie).bg }}>
-            <span className="font-extrabold text-sm" style={{ color: cat(top.categorie).color }}>
-              {cat(top.categorie).label}
-            </span>
+          <div className="flex flex-row items-center gap-2">
+            {top.cote != null && (
+              <div className="px-3 py-1.5 rounded-full bg-white/20 text-white font-extrabold text-sm">
+                Cote {top.cote.toFixed(1)}
+              </div>
+            )}
           </div>
         </div>
 
-        <div className="flex flex-row items-center gap-4">
-          <div className="w-12 h-12 rounded-xl bg-white/20 flex items-center justify-center shrink-0">
-            <span className="text-white font-extrabold text-2xl">{top.numPmu}</span>
+        <div className="flex flex-row items-center gap-4 relative z-10">
+          <div className="w-16 h-16 rounded-xl bg-white/20 flex flex-col items-center justify-center shrink-0 shadow-inner">
+            <span className="text-white font-black text-3xl leading-none">{top.numPmu}</span>
           </div>
           <div className="flex-1 min-w-0">
-            <h3 className="text-white font-extrabold text-xl truncate">{top.nom}</h3>
-            <p className="text-white/85 text-base mt-0.5 truncate">{top.driver}</p>
+            <h3 className="text-white font-black text-2xl truncate tracking-tight">{top.nom}</h3>
+            <div className="flex flex-wrap items-center gap-2 mt-1.5">
+              <span className="text-white/90 text-sm font-semibold bg-black/10 px-2 py-0.5 rounded flex items-center gap-1 truncate">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
+                {top.driver || "Inconnu"}
+              </span>
+              {top.age && top.sexe && (
+                <span className="text-white/80 text-xs font-bold uppercase tracking-wider bg-black/10 px-1.5 py-0.5 rounded">
+                  {top.age} ans · {top.sexe}
+                </span>
+              )}
+            </div>
           </div>
           {finished ? (
-            <div className="flex flex-col items-center gap-1.5">
+            <div className="flex flex-col items-center gap-1.5 shrink-0">
               <div className="bg-white/20 px-3.5 py-2 rounded-md">
                 <span className="text-white font-extrabold text-xl">{topPos ? `${topPos}e` : "NP"}</span>
               </div>
               <EcartTag pos={topPos} rank={top.rank} light />
             </div>
           ) : (
-            <div className="flex flex-col items-center shrink-0">
-              <span className="text-white font-extrabold text-[28px] leading-none">{top.confidence}</span>
-              <span className="text-white/80 text-[10px] font-semibold">confiance</span>
+            <div className="flex flex-col items-center shrink-0 bg-black/10 px-3 py-2 rounded-xl">
+              <span className="text-white font-black text-[28px] leading-none">{top.confidence}</span>
+              <span className="text-white/80 text-[10px] font-bold uppercase tracking-wider mt-1">score</span>
             </div>
           )}
         </div>
         
-        <p className="text-white text-base mt-4 leading-relaxed">{top.reasoning}</p>
-        {top.cote != null && <p className="text-white/90 text-base font-bold mt-1.5">Cote {top.cote.toFixed(1)}</p>}
+        <div className="mt-4 pt-4 border-t border-white/20 relative z-10">
+          <p className="text-white text-[15px] leading-relaxed font-medium">{top.reasoning}</p>
+        </div>
       </div>
 
       {/* Rest of the ranks */}
       {rest.map((s) => {
         const pos = posByNum[s.numPmu];
         return (
-          <div key={s.numPmu} className="flex flex-row items-center gap-4 bg-white rounded-md p-4 shadow-sm border-l-[3px]" style={{ borderLeftColor: cat(s.categorie).color }}>
-            <span className="w-5 text-center text-lg font-extrabold text-[#8E8E93] shrink-0">{s.rank}</span>
-            <div className="w-7 h-7 rounded-lg flex items-center justify-center shrink-0" style={{ backgroundColor: cat(s.categorie).bg }}>
-              <span className="font-extrabold text-sm" style={{ color: cat(s.categorie).color }}>{s.numPmu}</span>
+          <div key={s.numPmu} className="flex flex-row items-center gap-4 bg-white rounded-xl p-4 shadow-sm border border-gray-100 relative overflow-hidden group hover:shadow-md transition-shadow">
+            <div className="absolute left-0 top-0 bottom-0 w-1.5" style={{ backgroundColor: cat(s.categorie).color }} />
+            <span className="w-5 text-center text-lg font-black text-gray-300 shrink-0 ml-1">{s.rank}</span>
+            <div className="w-10 h-10 rounded-lg flex items-center justify-center shrink-0 shadow-inner" style={{ backgroundColor: cat(s.categorie).bg }}>
+              <span className="font-extrabold text-lg" style={{ color: cat(s.categorie).color }}>{s.numPmu}</span>
             </div>
             <div className="flex-1 min-w-0">
-              <h4 className="text-base font-bold text-[#1C1C1E] truncate">{s.nom}</h4>
-              <p className="text-sm text-[#8E8E93] mt-0.5 truncate">{s.reasoning}</p>
-              <div className="h-1.5 rounded-full bg-[#EBEBEF] mt-1.5 overflow-hidden">
-                <div className="h-full rounded-full bg-[#10B981]" style={{ width: `${s.confidence}%` }} />
+              <div className="flex items-center gap-2">
+                <h4 className="text-[16px] font-extrabold text-[#1C1C1E] truncate">{s.nom}</h4>
+                {s.cote != null && (
+                  <span className="text-[11px] font-bold px-1.5 py-0.5 rounded bg-gray-100 text-gray-600 shrink-0">
+                    {s.cote.toFixed(1)}
+                  </span>
+                )}
+              </div>
+              <p className="text-[13px] text-[#8E8E93] mt-1 line-clamp-2 leading-snug">{s.reasoning}</p>
+              <div className="flex items-center gap-2 mt-2">
+                <div className="flex-1 h-1.5 rounded-full bg-[#EBEBEF] overflow-hidden">
+                  <div className="h-full rounded-full bg-[#10B981] transition-all" style={{ width: `${s.confidence}%` }} />
+                </div>
+                <span className="text-[10px] font-bold text-gray-400 w-6 text-right">{s.score}</span>
               </div>
             </div>
             {finished ? (
-              <div className="flex flex-col items-center gap-1 min-w-[44px]">
-                <div className="px-2 py-1.5 rounded bg-[#EBEBEF] flex items-center justify-center min-w-[40px]" style={{ backgroundColor: pos === 1 ? "#D4AF37" : pos && pos <= 3 ? "#10B981" : "#EBEBEF" }}>
-                  <span className="font-extrabold text-base" style={{ color: pos && pos <= 3 ? "#fff" : "#3A3A3C" }}>{pos ? `${pos}e` : "NP"}</span>
+              <div className="flex flex-col items-center gap-1.5 min-w-[44px]">
+                <div className="px-2 py-1.5 rounded-lg flex items-center justify-center min-w-[44px] shadow-inner" style={{ backgroundColor: pos === 1 ? "#D4AF37" : pos && pos <= 3 ? "#10B981" : "#F2F2F7" }}>
+                  <span className="font-extrabold text-[15px]" style={{ color: pos && pos <= 3 ? "#fff" : "#8E8E93" }}>{pos ? `${pos}e` : "NP"}</span>
                 </div>
                 <EcartTag pos={pos} rank={s.rank} />
               </div>
-            ) : (
-              <div className="flex flex-col items-end min-w-[40px] shrink-0">
-                <span className="text-lg font-extrabold text-[#10B981]">{s.score}</span>
-                {s.cote != null && <span className="text-sm text-[#8E8E93] mt-0.5">{s.cote.toFixed(1)}</span>}
-              </div>
-            )}
+            ) : null}
           </div>
         );
       })}
 
       {/* Tocards */}
       {tocards && tocards.length > 0 && (
-        <div className="bg-[#FFFBEB] rounded-md p-4 mt-2 border border-[#FDE68A]">
-          <div className="flex flex-row items-center gap-1.5">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#F59E0B" strokeWidth="2"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon></svg>
-            <h3 className="font-extrabold text-lg text-[#92400E]">Tocards à jouer</h3>
-          </div>
-          <p className="text-sm text-[#B45309] mt-0.5 mb-3">Outsiders hors top 8 · grosses cotes à surveiller</p>
-          
-          {tocards.map((t: any) => {
-            const pos = finished ? posByNum[t.numPmu] : undefined;
-            return (
-              <div key={t.numPmu} className="flex flex-row items-center gap-4 bg-white rounded p-2 mt-2">
-                <div className="w-8 h-8 rounded shrink-0 flex items-center justify-center" style={{ backgroundColor: cat(t.categorie).color }}>
-                  <span className="text-white font-extrabold text-base">{t.numPmu}</span>
-                </div>
-                <div className="flex-1 min-w-0">
-                  <h4 className="text-base font-bold text-[#1C1C1E] truncate">{t.nom}</h4>
-                  <p className="text-sm text-[#B45309] mt-0.5 truncate">{t.reasoning}</p>
-                </div>
-                {finished ? (
-                  <div className="min-w-[40px] px-2 py-1.5 rounded bg-[#EBEBEF] flex items-center justify-center shrink-0">
-                    <span className="font-extrabold text-base text-[#3A3A3C]">{pos ? `${pos}e` : "NP"}</span>
-                  </div>
-                ) : (
-                  <div className="bg-[#FEF3C7] px-2.5 py-1.5 rounded shrink-0">
-                    <span className="font-extrabold text-lg text-[#B45309]">{t.cote != null ? t.cote.toFixed(1) : "—"}</span>
-                  </div>
-                )}
+        <div className="bg-gradient-to-br from-[#FFFBEB] to-[#FEF3C7] rounded-xl p-5 mt-4 border border-[#FDE68A] shadow-sm">
+          <div className="flex flex-row items-center justify-between mb-2">
+            <div className="flex items-center gap-2">
+              <div className="bg-[#F59E0B] p-1.5 rounded-md">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2.5"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon></svg>
               </div>
-            );
-          })}
+              <h3 className="font-black text-xl text-[#92400E]">Coups de poker</h3>
+            </div>
+          </div>
+          <p className="text-[13px] font-semibold text-[#B45309] mb-4">Outsiders hors top 8 · Grosses cotes détectées par l'IA</p>
+          
+          <div className="grid grid-cols-1 gap-3">
+            {tocards.map((t: any) => {
+              const pos = finished ? posByNum[t.numPmu] : undefined;
+              return (
+                <div key={t.numPmu} className="flex flex-row items-center gap-4 bg-white/80 backdrop-blur rounded-xl p-3 border border-white/50 shadow-[0_2px_4px_rgba(0,0,0,0.02)] hover:bg-white transition-colors">
+                  <div className="w-10 h-10 rounded-lg shrink-0 flex items-center justify-center shadow-inner" style={{ backgroundColor: cat(t.categorie).color }}>
+                    <span className="text-white font-extrabold text-lg">{t.numPmu}</span>
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2">
+                      <h4 className="text-[15px] font-extrabold text-[#1C1C1E] truncate">{t.nom}</h4>
+                    </div>
+                    <p className="text-[13px] text-[#B45309] mt-0.5 line-clamp-1">{t.reasoning}</p>
+                  </div>
+                  {finished ? (
+                    <div className="min-w-[44px] px-2 py-1.5 rounded-lg bg-gray-100 flex items-center justify-center shrink-0">
+                      <span className="font-extrabold text-[15px] text-gray-500">{pos ? `${pos}e` : "NP"}</span>
+                    </div>
+                  ) : (
+                    <div className="bg-white px-3 py-1.5 rounded-lg shrink-0 border border-amber-100 shadow-sm">
+                      <span className="font-black text-lg text-[#D97706]">{t.cote != null ? t.cote.toFixed(1) : "—"}</span>
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+          </div>
         </div>
       )}
     </div>
