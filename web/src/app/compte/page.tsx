@@ -87,7 +87,7 @@ export default function Compte() {
     if (!adminToken) return;
     try {
       const res = await api.listCodes(adminToken);
-      setCodes(res.codes || []);
+      setCodes(Array.isArray(res) ? res : []);
     } catch {
       /* ignore */
     }
