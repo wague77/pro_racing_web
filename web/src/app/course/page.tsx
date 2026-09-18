@@ -13,9 +13,9 @@ import { isPronoUnlocked, unlockProno, getRewardedToday, incrementRewardedToday,
 import { CouplesView, CotesView } from "./CourseViews";
 import { PronosticView } from "./PronosticView";
 import { ArriveeCard, ParticipantRow, RapportsCard, LockedFeature } from "./CourseComponents";
-import { ParticipantModal } from "./ParticipantModal";
+import { ParticipantModal, computeScore } from "./ParticipantModal";
 
-type Segment = "partants" | "pronostic" | "cotes" | "couples";
+type Segment = "partants" | "pronostic" | "pronostic2" | "cotes" | "couples";
 type Sort = "numero" | "cote";
 
 function CourseContent() {
@@ -196,7 +196,39 @@ function CourseContent() {
     return arr;
   }, [participants, sort]);
 
-  const segments: Segment[] = ["partants", "pronostic", "cotes", "couples"];
+  const pronostic2Data = useMemo(() => {
+    // Calculate score for all
+    const arr = participants.map((p) => {
+      const score = computeScore(p);
+      return { 
+        ...p, 
+        scoreIA: score, 
+        confidence: score, 
+        score: score, 
+        reasoning: "Basé sur les notes historiques (palmarès, musique, gains)" 
+      };
+    });
+    
+    // Sort descending by score
+    arr.sort((a, b) => b.scoreIA - a.scoreIA);
+    
+    // Generate selection (top 8)
+    const selection = arr.slice(0, 8).map((p, i) => ({
+      ...p,
+      rank: i + 1,
+      categorie: p.cote && p.cote <= 6 ? "favori" : p.cote && p.cote <= 15 ? "outsider" : "tocard"
+    }));
+    
+    // Generate tocards (coup de pokers): not in top 8, high odds, decent score
+    const tocards = arr.slice(8)
+      .filter((p) => p.cote && p.cote > 15 && p.scoreIA >= 40)
+      .slice(0, 3)
+      .map((p) => ({ ...p, categorie: "tocard" }));
+      
+    return { selection, tocards };
+  }, [participants]);
+
+  const segments: Segment[] = ["partants", "pronostic", "pronostic2", "cotes", "couples"];
 
   return (
     <div className="flex-1 flex flex-col bg-[#F2F2F7]">
@@ -240,7 +272,7 @@ function CourseContent() {
               className={`flex-1 py-2 rounded-md transition-colors ${segment === s ? "bg-white" : ""}`}
             >
               <span className={`font-bold text-sm truncate ${segment === s ? "text-[#1C1C1E]" : "text-white/90"}`}>
-                {s === "partants" ? "Partants" : s === "pronostic" ? "Prono IA" : s === "cotes" ? "Cotes" : "Couplés"}
+                {s === "partants" ? "Partants" : s === "pronostic" ? "Prono IA" : s === "pronostic2" ? "Prono IA 2" : s === "cotes" ? "Cotes" : "Couplés"}
               </span>
             </button>
           ))}
@@ -306,7 +338,7 @@ function CourseContent() {
           watching={unlocking}
           remaining={Math.max(0, REWARDED_DAILY_LIMIT - rewardsUsed)}
         />
-      ) : isDemo && segment === "pronostic" && !pronoUnlocked ? (
+      ) : isDemo && (segment === "pronostic" || segment === "pronostic2") && !pronoUnlocked ? (
         <LockedFeature
           title="Pronostic IA verrouillé"
           subtitle="Le Top 8 IA, les Tocards et les scores de confiance sont réservés à l'accès complet."
@@ -328,6 +360,16 @@ function CourseContent() {
         <CouplesView 
           analysis={cotes.analysis} 
           participants={participants} 
+          onHorseClick={(h) => {
+            const fullPart = participants.find((p) => p.numPmu === h.numPmu);
+            if (fullPart) setSelectedParticipant(fullPart);
+          }} 
+        />
+      ) : segment === "pronostic2" ? (
+        <PronosticView 
+          selection={pronostic2Data.selection} 
+          tocards={pronostic2Data.tocards} 
+          arrivee={arrivee} 
           onHorseClick={(h) => {
             const fullPart = participants.find((p) => p.numPmu === h.numPmu);
             if (fullPart) setSelectedParticipant(fullPart);
