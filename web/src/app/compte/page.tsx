@@ -41,6 +41,7 @@ export default function Compte() {
 
   const [codes, setCodes] = useState<any[]>([]);
   const [codesBusy, setCodesBusy] = useState(false);
+  const [onlineCounts, setOnlineCounts] = useState<Record<string, number>>({});
 
   const [freeAccess, setFreeAccess] = useState<{active: boolean; expires_at: string | null} | null>(null);
   const [freeAccessBusy, setFreeAccessBusy] = useState(false);
@@ -130,6 +131,24 @@ export default function Compte() {
       loadAnalysisCfg();
       loadCodes();
       loadLoginConfig();
+
+      // WebSocket pour les utilisateurs en ligne
+      const baseUrl = process.env.NODE_ENV === "production" ? "https://pro-racing-api-production.up.railway.app" : (process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:8000");
+      const wsUrl = baseUrl.replace(/^http/, "ws") + "/api/admin/ws?token=" + encodeURIComponent(adminToken);
+      
+      const ws = new WebSocket(wsUrl);
+      ws.onmessage = (event) => {
+        try {
+          const data = JSON.parse(event.data);
+          setOnlineCounts(data);
+        } catch (e) {
+          console.error("Invalid WS message", e);
+        }
+      };
+
+      return () => {
+        ws.close();
+      };
     }
   }, [adminToken, loadPerfConfig, loadDevices, loadAnalysisCfg, loadCodes, loadLoginConfig]);
 
@@ -468,7 +487,7 @@ export default function Compte() {
               </div>
             )}
 
-            <AccessCodesManager codes={codes} busy={codesBusy} onCreate={createCode} onRevoke={revokeCode} onActivate={activateCode} onDelete={deleteCode} />
+            <AccessCodesManager codes={codes} busy={codesBusy} onCreate={createCode} onRevoke={revokeCode} onActivate={activateCode} onDelete={deleteCode} onlineCounts={onlineCounts} />
 
             <AnalysisConfig cfg={analysisCfg} busy={cfgBusy} onStep={stepCfg} onSave={saveAnalysisCfg} />
 

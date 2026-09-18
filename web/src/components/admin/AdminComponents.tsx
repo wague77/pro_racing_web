@@ -280,6 +280,7 @@ export function AccessCodesManager({
   onRevoke: (id: string) => void;
   onActivate: (id: string) => void;
   onDelete: (id: string) => void;
+  onlineCounts?: Record<string, number>;
 }) {
   const [copiedId, setCopiedId] = useState<string | null>(null);
   const [expiryDate, setExpiryDate] = useState<string>(
@@ -330,7 +331,7 @@ export function AccessCodesManager({
                     {c.active ? "Actif" : "Bloqué"}
                   </span>
                   <span className="flex items-center gap-1 text-[10px] font-bold bg-blue-50 text-blue-600 px-1.5 py-0.5 rounded">
-                    <MonitorSmartphone size={10} /> {c.online_count || 0} en ligne
+                    <MonitorSmartphone size={10} /> {(onlineCounts && onlineCounts[c.code] !== undefined) ? onlineCounts[c.code] : (c.online_count || 0)} en ligne
                   </span>
                 </div>
               </div>

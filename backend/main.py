@@ -12,7 +12,7 @@ import jwt
 import bcrypt
 import httpx
 import requests
-from fastapi import FastAPI, APIRouter, HTTPException, Depends, Request
+from fastapi import FastAPI, APIRouter, HTTPException, Depends, Request, WebSocket, WebSocketDisconnect, Query
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from starlette.middleware.cors import CORSMiddleware
 from motor.motor_asyncio import AsyncIOMotorClient
@@ -1050,8 +1050,11 @@ async def validate_session(device_id: Optional[str] = None, user: dict = Depends
     # Blocage d'un appareil précis (révocation à distance par l'admin)
     if device_id:
         dev = await db.devices.find_one({"_id": device_id})
-        if dev and dev.get("blocked"):
-            raise HTTPException(status_code=401, detail="Cet appareil a été bloqué par l'administrateur")
+        if dev:
+            if dev.get("blocked"):
+                raise HTTPException(status_code=401, detail="Cet appareil a été bloqué par l'administrateur")
+            else:
+                await db.devices.update_one({"_id": device_id}, {"$set": {"last_seen": now_utc().isoformat()}})
     if user.get("role") == "admin":
         return {"valid": True}
     if user.get("role") == "demo":
@@ -1184,6 +1187,43 @@ async def list_codes(_admin: dict = Depends(require_admin)):
         doc["online_count"] = online_counts.get(doc["code"], 0)
         out.append(AccessCodeOut(**doc))
     return out
+
+
+@api_router.websocket("/admin/ws")
+async def admin_websocket(websocket: WebSocket, token: str = Query(...)):
+    await websocket.accept()
+    # Basic token check
+    try:
+        payload = jwt.decode(token, JWT_SECRET, algorithms=[JWT_ALGO])
+        if payload.get("sub") != "admin" and payload.get("role") != "admin":
+            await websocket.close(code=1008)
+            return
+    except Exception:
+        await websocket.close(code=1008)
+        return
+
+    try:
+        while True:
+            five_mins_ago = (now_utc() - timedelta(minutes=5)).isoformat()
+            pipeline = [
+                {"$match": {"last_seen": {"$gte": five_mins_ago}}},
+                {"$group": {"_id": "$code", "count": {"$sum": 1}}}
+            ]
+            online_counts = {}
+            async for d in db.devices.aggregate(pipeline):
+                if d["_id"]:
+                    online_counts[d["_id"]] = d["count"]
+            
+            await websocket.send_json(online_counts)
+            await asyncio.sleep(5)
+    except WebSocketDisconnect:
+        pass
+    except Exception as e:
+        logger.error(f"WebSocket Error: {e}")
+        try:
+            await websocket.close()
+        except:
+            pass
 
 
 @api_router.post("/admin/access-codes/{code_id}/revoke", response_model=AccessCodeOut)
