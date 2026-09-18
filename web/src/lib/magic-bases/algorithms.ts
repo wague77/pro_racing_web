@@ -14,7 +14,7 @@ export function partenairesAuto(base: number, partants: number, combien?: number
     return s / 4294967296;
   }
 
-  const pool = [];
+  const pool: number[] = [];
   for (let i = 1; i <= partants; i++) {
     if (i !== base) pool.push(i);
   }
@@ -216,4 +216,31 @@ export function construireGrilleGarantie(
     garantiesT: { a: gTa, ab: gTab, abc: gTabc },
     garantiesQ: { a: gQa, ab: gQab, abc: gQabc }
   };
+}
+
+export function genererTierce(partants: number, base: number): number[][] {
+  const result = construireGrille(base, partants);
+  return [...result.tierces.a, ...result.tierces.b, ...result.tierces.c];
+}
+
+export function genererCouplePlace(partants: number, base: number): number[][] {
+  const result = construireGrille(base, partants);
+  return [...result.couples.a, ...result.couples.b, ...result.couples.c];
+}
+
+export function genererQuinteGarantie100(partants: number, base: number): number[][] {
+  const result = construireGrilleGarantie(base, partants, 8);
+  return [...result.quintes.a, ...result.quintes.b, ...result.quintes.c];
+}
+
+export function calculerCout(jeu: "JEU_A" | "JEU_AB" | "JEU_ABC", nbCombs: number, type: "tierce" | "couple" | "quinte"): number {
+  if (type === "quinte") return nbCombs * 2;
+  const prixUnit = type === "tierce" ? PRIX_TIERCE : PRIX_COUPLE;
+  return nbCombs * prixUnit;
+}
+
+export function calculerGarantie(jeu: "JEU_A" | "JEU_AB" | "JEU_ABC", type: "tierce" | "couple"): number {
+  if (jeu === "JEU_A") return 40;
+  if (jeu === "JEU_AB") return 75;
+  return 100;
 }
