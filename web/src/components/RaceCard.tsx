@@ -56,7 +56,7 @@ export default function RaceCard({
       </div>
 
       <div className="flex-1 min-w-0">
-        {hippoLabel && <div className="text-xs font-semibold text-gray-400 mb-1">{hippoLabel}</div>}
+        {hippoLabel && <div className="text-xs font-semibold text-gray-400 mb-1 truncate">{hippoLabel}</div>}
         {quinte && (
           <div className="flex flex-row items-center self-start gap-1 bg-gradient-to-r from-[#FDE68A] to-[#F5C518] px-2.5 py-1 rounded-md text-[10px] font-black text-[#7A5200] tracking-wider mb-1 max-w-max shadow-sm">
             <svg

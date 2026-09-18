@@ -73,7 +73,7 @@ function MeetingContent() {
       {!reunion || (reunion.courses || []).length === 0 ? (
         <EmptyState icon="Flag" title="Aucune course" subtitle="Programme indisponible." />
       ) : (
-        <div className="p-5 flex flex-col gap-4 pb-10">
+        <div className="p-5 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 pb-10 max-w-7xl mx-auto w-full">
           {reunion.courses.map((item: any) => {
             const cNum = item.numExterne || item.numOrdre;
             const key = courseKey(date, rNum, cNum);

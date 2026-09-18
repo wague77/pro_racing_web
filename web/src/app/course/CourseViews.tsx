@@ -20,7 +20,7 @@ const SIGNAL: Record<string, { color: string; bg: string; label: string; icon: a
 
 export function CoupHorse({ pos, h, onHorseClick }: { pos: number; h: any; onHorseClick?: (part: any) => void }) {
   return (
-    <div className="flex flex-row items-center gap-2">
+    <div className="flex flex-row items-center gap-2 min-w-0">
       <div className="w-5 h-5 rounded-full bg-[#EBEBEF] flex items-center justify-center">
         <span className="text-[11px] font-extrabold text-[#8E8E93]">{pos}</span>
       </div>
@@ -63,7 +63,7 @@ export function CouplesView({ analysis, onHorseClick }: { analysis: any[]; parti
   }
 
   return (
-    <div className="p-5 pb-10 flex flex-col gap-4">
+    <div className="p-5 pb-10 flex flex-col gap-4 max-w-4xl mx-auto w-full">
       <div className="flex flex-row items-center gap-4 bg-[#E6F4EA] rounded-md p-4">
         <div className="w-10 h-10 rounded-full bg-[#10B981] flex items-center justify-center shrink-0">
           <span className="text-white font-black text-sm">90%</span>
@@ -104,7 +104,7 @@ export function CotesView({ analysis, onHorseClick }: { analysis: any[]; partici
     );
   }
   return (
-    <div className="p-5 pb-10 flex flex-col gap-4">
+    <div className="p-5 pb-10 flex flex-col gap-4 max-w-4xl mx-auto w-full">
       <div className="flex flex-row items-center gap-2 mb-2">
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#10B981" strokeWidth="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"></polyline></svg>
         <span className="text-[#8E8E93] text-sm font-semibold">Cote matin → cote directe → projection au départ</span>

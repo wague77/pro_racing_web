@@ -86,29 +86,31 @@ export default function Login() {
   };
 
   return (
-    <div className="flex flex-col h-screen bg-[#0A0A0C] relative overflow-hidden">
-      {/* Background Image & Gradient */}
-      <div 
-        className="absolute inset-0 z-0 bg-cover bg-center opacity-40 mix-blend-luminosity" 
-        style={{ backgroundImage: `url(${IMAGES.hero})` }} 
-      />
-      <div className="absolute inset-0 z-0 bg-gradient-to-t from-[#0A0A0C] via-[#0A0A0C]/80 to-transparent" />
-
-      {/* Top Content */}
-      <div className="relative z-10 flex-1 px-6 pt-20 md:pt-32 max-w-md mx-auto w-full text-center">
-        <div className="flex flex-col items-center gap-4">
-          <div className="w-16 h-16 rounded-3xl bg-gradient-to-br from-[#10B981] to-[#047857] flex items-center justify-center shadow-[0_0_30px_rgba(16,185,129,0.3)]">
-            <Award size={36} color="#ffffff" />
+    <div className="flex flex-col md:flex-row h-screen bg-[#0A0A0C] relative overflow-hidden">
+      {/* Left Pane / Background */}
+      <div className="absolute inset-0 md:relative md:flex-1 z-0 flex flex-col justify-center">
+        <div 
+          className="absolute inset-0 z-0 bg-cover bg-center opacity-40 mix-blend-luminosity" 
+          style={{ backgroundImage: `url(${IMAGES.hero})` }} 
+        />
+        <div className="absolute inset-0 z-0 bg-gradient-to-t md:bg-gradient-to-r from-[#0A0A0C] via-[#0A0A0C]/80 to-transparent" />
+        
+        {/* Top Content (Hero) */}
+        <div className="relative z-10 px-6 pt-20 md:pt-0 max-w-md mx-auto md:ml-20 w-full text-center md:text-left">
+          <div className="flex flex-col items-center md:items-start gap-4">
+            <div className="w-16 h-16 rounded-3xl bg-gradient-to-br from-[#10B981] to-[#047857] flex items-center justify-center shadow-[0_0_30px_rgba(16,185,129,0.3)]">
+              <Award size={36} color="#ffffff" />
+            </div>
+            <h1 className="text-4xl md:text-5xl lg:text-6xl font-black text-white tracking-tight">Pro-Racing</h1>
           </div>
-          <h1 className="text-4xl font-black text-white tracking-tight">Pro-Racing</h1>
+          <p className="text-gray-400 text-lg md:text-xl mt-4 font-medium max-w-sm">
+            L'intelligence artificielle au service<br className="md:hidden" /> de vos pronostics hippiques
+          </p>
         </div>
-        <p className="text-gray-400 text-lg mt-4 font-medium">
-          L'intelligence artificielle au service<br />de vos pronostics hippiques
-        </p>
       </div>
 
-      {/* Bottom Sheet */}
-      <div className="relative z-10 glass-panel rounded-t-[40px] px-8 pt-8 pb-12 w-full max-w-lg mx-auto border-t border-white/10">
+      {/* Right Pane (Form) */}
+      <div className="relative z-10 glass-panel md:bg-[#151518]/95 rounded-t-[40px] md:rounded-none px-8 pt-8 pb-12 w-full md:w-[480px] lg:w-[550px] mx-auto flex flex-col justify-center border-t md:border-t-0 md:border-l border-white/10 mt-auto md:mt-0 h-fit md:h-full">
         <div className="flex bg-white/5 p-1 rounded-xl mb-8">
           <button
             onClick={() => { setMode("code"); setError(null); }}

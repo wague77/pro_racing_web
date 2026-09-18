@@ -62,7 +62,7 @@ export function PronosticView({ selection, tocards, arrivee, onHorseClick }: { s
   const avgEcart = ecarts.length ? ecarts.reduce((a, b) => a + b, 0) / ecarts.length : null;
 
   return (
-    <div className="p-5 pb-10 flex flex-col gap-4">
+    <div className="p-5 pb-10 flex flex-col gap-4 max-w-4xl mx-auto w-full">
       {finished ? (
         <div className="bg-[#1C1C1E] rounded-xl p-5 shadow-sm text-white">
           <h3 className="font-extrabold text-lg mb-4">Bilan du pronostic IA</h3>

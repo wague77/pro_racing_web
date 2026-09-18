@@ -102,11 +102,11 @@ export default function Pronostics() {
         ) : flat.length === 0 ? (
           <EmptyState icon="Trophy" title="Aucune course" subtitle="Aucune course à cette date." />
         ) : (
-          <div className="flex flex-col gap-4 mt-2">
+          <div className="flex flex-col mt-2 max-w-7xl mx-auto w-full">
             {isDemo && (
               <button
                 onClick={() => router.push("/paywall")}
-                className="flex flex-row items-center gap-3 bg-gradient-to-r from-[#FDE68A]/10 to-[#F5C518]/10 rounded-2xl border border-[#F5C518]/30 p-4 mb-2 transition-all hover:bg-[#FDE68A]/20"
+                className="flex flex-row items-center gap-3 bg-gradient-to-r from-[#FDE68A]/10 to-[#F5C518]/10 rounded-2xl border border-[#F5C518]/30 p-4 mb-4 transition-all hover:bg-[#FDE68A]/20"
               >
                 <PlayCircle size={22} className="text-[#F5C518] shrink-0" />
                 <span className="flex-1 text-sm font-bold text-[#F5C518] text-left">
@@ -116,14 +116,16 @@ export default function Pronostics() {
               </button>
             )}
 
-            {visible.map((c, i) => (
-              <RaceCard
-                key={`R${c._r}C${c.numExterne || c.numOrdre}-${i}`}
-                course={c}
-                hippoLabel={`R${c._r} · ${c._hippo}`}
-                href={`/course?date=${apiDate(date)}&r=${c._r}&c=${c.numExterne || c.numOrdre}&libelle=${encodeURIComponent(c.libelle || c.libelleCourt || "")}&hippodrome=${encodeURIComponent(c._hippo || "")}&discipline=${encodeURIComponent(c.specialite || c.discipline || "")}&distance=${c.distance || ""}&heureDepart=${c.heureDepart || ""}&segment=pronostic`}
-              />
-            ))}
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {visible.map((c, i) => (
+                <RaceCard
+                  key={`R${c._r}C${c.numExterne || c.numOrdre}-${i}`}
+                  course={c}
+                  hippoLabel={`R${c._r} · ${c._hippo}`}
+                  href={`/course?date=${apiDate(date)}&r=${c._r}&c=${c.numExterne || c.numOrdre}&libelle=${encodeURIComponent(c.libelle || c.libelleCourt || "")}&hippodrome=${encodeURIComponent(c._hippo || "")}&discipline=${encodeURIComponent(c.specialite || c.discipline || "")}&distance=${c.distance || ""}&heureDepart=${c.heureDepart || ""}&segment=pronostic`}
+                />
+              ))}
+            </div>
           </div>
         )}
       </div>
