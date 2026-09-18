@@ -34,15 +34,15 @@ interface ParticipantModalProps {
   onClose: () => void;
 }
 
-function parseMusique(m: string) {
+function parseMusique(m: any) {
   // Ex: "8A2A9ADMDM9A"
-  if (!m) return [];
+  if (!m || typeof m !== "string") return [];
   const parts = m.match(/([0-9DTA]+[A-Z])/g) || [];
   return parts.slice(0, 10); // keep last 10
 }
 
-function formatEuro(cents?: number) {
-  if (cents == null) return "0 €";
+function formatEuro(cents?: any) {
+  if (cents == null || typeof cents !== "number" || isNaN(cents)) return "0 €";
   return new Intl.NumberFormat("fr-FR", { style: "currency", currency: "EUR", maximumFractionDigits: 0 }).format(cents / 100);
 }
 

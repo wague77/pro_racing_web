@@ -9,7 +9,7 @@ export function calculerScore(data: ScoreData): number {
   let score = 50; // Base score
 
   // 1. Analyse de la musique (historique des places)
-  if (data.musique) {
+  if (data.musique && typeof data.musique === 'string') {
     const parts = data.musique.match(/([0-9DTA]+[A-Z])/g) || [];
     let musiqueScore = 0;
     
