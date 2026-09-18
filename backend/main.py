@@ -12,7 +12,7 @@ import jwt
 import bcrypt
 import httpx
 import requests
-from fastapi import FastAPI, APIRouter, HTTPException, Depends
+from fastapi import FastAPI, APIRouter, HTTPException, Depends, Request
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from starlette.middleware.cors import CORSMiddleware
 from motor.motor_asyncio import AsyncIOMotorClient
@@ -140,6 +140,7 @@ class AccessCodeOut(BaseModel):
     max_uses: Optional[int] = None
     created_at: str
     expires_at: Optional[str] = None
+    online_count: Optional[int] = 0
 
     model_config = {"populate_by_name": True}
 
@@ -853,22 +854,59 @@ async def set_perf_config(body: PerfConfigRequest, _admin: dict = Depends(requir
 
 
 # ---------------------------------------------------------------------------
+# Rate Limiting (Login)
+# ---------------------------------------------------------------------------
+_failed_logins: dict = {}
+
+def check_login_rate_limit(request: Request):
+    ip = request.client.host if request.client else "unknown"
+    now = time.time()
+    info = _failed_logins.get(ip)
+    if info:
+        if info["count"] >= 2 and info["blocked_until"] > now:
+            raise HTTPException(status_code=429, detail="Compte temporairement bloqué suite à plusieurs échecs. Veuillez réessayer plus tard.")
+        elif info["blocked_until"] <= now:
+            # Réinitialiser si le blocage est terminé
+            if info["count"] >= 2:
+                _failed_logins[ip] = {"count": 0, "blocked_until": 0}
+
+def record_login_failure(request: Request):
+    ip = request.client.host if request.client else "unknown"
+    now = time.time()
+    if ip not in _failed_logins:
+        _failed_logins[ip] = {"count": 1, "blocked_until": 0}
+    else:
+        _failed_logins[ip]["count"] += 1
+    
+    if _failed_logins[ip]["count"] >= 2:
+        _failed_logins[ip]["blocked_until"] = now + 900 # 15 minutes de blocage
+
+def record_login_success(request: Request):
+    ip = request.client.host if request.client else "unknown"
+    if ip in _failed_logins:
+        _failed_logins[ip] = {"count": 0, "blocked_until": 0}
+
+# ---------------------------------------------------------------------------
 # Auth routes
 # ---------------------------------------------------------------------------
 @api_router.post("/admin/login", response_model=TokenResponse)
-async def admin_login(body: AdminLogin):
+async def admin_login(body: AdminLogin, request: Request):
+    check_login_rate_limit(request)
     # Connexion par mot de passe uniquement (identifiant côté serveur, non demandé).
     admin = await db.admins.find_one({"username": ADMIN_USERNAME})
     # Vérifie toujours un hash (même si absent) pour limiter les attaques par timing.
     stored = admin["hashed_password"] if admin else hash_password("dummy-constant-password")
     if not verify_password(body.password, stored) or not admin:
+        record_login_failure(request)
         raise HTTPException(status_code=401, detail="Mot de passe incorrect")
+    record_login_success(request)
     token = create_token(str(admin["_id"]), "admin")
     return TokenResponse(access_token=token, role="admin")
 
 
 @api_router.post("/auth/redeem", response_model=TokenResponse)
-async def redeem_code(body: RedeemRequest):
+async def redeem_code(body: RedeemRequest, request: Request):
+    check_login_rate_limit(request)
     code = (body.code or "").strip().upper()
     # Code démo permanent : marche toujours, donne le mode démo (accès limité).
     if code == "DEMO2026":
@@ -876,8 +914,10 @@ async def redeem_code(body: RedeemRequest):
         return TokenResponse(access_token=token, role="demo")
     doc = await db.access_codes.find_one({"code": code})
     if not doc:
+        record_login_failure(request)
         raise HTTPException(status_code=400, detail="Code d'accès invalide")
     if not doc.get("active", True):
+        record_login_failure(request)
         raise HTTPException(status_code=400, detail="Ce code a été désactivé")
     max_uses = doc.get("max_uses")
     if max_uses is not None and doc.get("usage_count", 0) >= max_uses:
@@ -895,6 +935,7 @@ async def redeem_code(body: RedeemRequest):
         {"_id": doc["_id"]},
         {"$inc": {"usage_count": 1}, "$set": {"last_used_at": now_utc().isoformat()}},
     )
+    record_login_success(request)
     token = create_token(str(doc["_id"]), "user", {"code": code})
     return TokenResponse(access_token=token, role="user")
 
@@ -1127,9 +1168,20 @@ async def create_code(body: CreateCodeRequest, _admin: dict = Depends(require_ad
 
 @api_router.get("/admin/access-codes", response_model=List[AccessCodeOut])
 async def list_codes(_admin: dict = Depends(require_admin)):
+    five_mins_ago = (now_utc() - timedelta(minutes=5)).isoformat()
+    pipeline = [
+        {"$match": {"last_seen": {"$gte": five_mins_ago}}},
+        {"$group": {"_id": "$code", "count": {"$sum": 1}}}
+    ]
+    online_counts = {}
+    async for d in db.devices.aggregate(pipeline):
+        if d["_id"]:
+            online_counts[d["_id"]] = d["count"]
+
     out = []
     cursor = db.access_codes.find().sort("created_at", -1).limit(2000)
     async for doc in cursor:
+        doc["online_count"] = online_counts.get(doc["code"], 0)
         out.append(AccessCodeOut(**doc))
     return out
 

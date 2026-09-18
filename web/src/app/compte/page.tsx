@@ -330,7 +330,12 @@ export default function Compte() {
                 placeholder="Mot de passe"
                 className="w-full bg-gray-50 border border-gray-200 rounded-lg px-4 py-3 text-base text-gray-900 outline-none focus:border-[#10B981] transition-colors"
               />
-              {loginErr && <p className="text-red-500 text-sm font-semibold">{loginErr}</p>}
+              {loginErr && (
+                <div className="bg-red-50 text-red-600 border border-red-200 rounded-lg p-3 text-sm font-semibold flex items-start gap-2">
+                  <span className="shrink-0 mt-0.5">⚠️</span>
+                  <span>{loginErr}</span>
+                </div>
+              )}
               <button
                 type="submit"
                 disabled={loginLoading}

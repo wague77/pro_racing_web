@@ -74,6 +74,17 @@ export default function Reunions() {
   const [reunions, setReunions] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [myExpiry, setMyExpiry] = useState<string | null>(null);
+
+  const loadMe = useCallback(async () => {
+    if (!token) return;
+    try {
+      const res = await api.me(token);
+      setMyExpiry(res.expires_at || null);
+    } catch {
+      /* ignore */
+    }
+  }, [token]);
 
   const load = useCallback(async () => {
     if (!token) return;
@@ -91,7 +102,8 @@ export default function Reunions() {
 
   useEffect(() => {
     load();
-  }, [load]);
+    loadMe();
+  }, [load, loadMe]);
 
   return (
     <div className="flex flex-col min-h-screen">
@@ -118,6 +130,22 @@ export default function Reunions() {
         </div>
         <DatePicker selected={date} onSelect={setDate} />
       </div>
+      
+      {myExpiry && (
+        <div className="mx-4 mt-4 bg-gradient-to-r from-emerald-500/10 to-emerald-500/5 border border-emerald-500/20 rounded-xl p-3 flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <div className="w-8 h-8 rounded-full bg-emerald-500/20 flex items-center justify-center">
+              <Star size={16} className="text-emerald-400" />
+            </div>
+            <div>
+              <p className="text-sm font-medium text-emerald-100">Accès Premium Actif</p>
+              <p className="text-xs text-emerald-500/70">
+                Expire le {new Date(myExpiry).toLocaleDateString("fr-FR")}
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
 
       <div className="flex-1 flex flex-col p-4 pb-24 md:pb-8">
         {loading ? (

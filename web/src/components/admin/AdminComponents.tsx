@@ -325,9 +325,14 @@ export function AccessCodesManager({
                 <span className="text-xs text-gray-500 mt-1">
                   Expire le : {dayjs(c.expires_at).format("DD/MM/YYYY")}
                 </span>
-                <span className={`text-[10px] font-bold uppercase mt-1 ${c.active ? "text-green-500" : "text-orange-500"}`}>
-                  {c.active ? "Actif" : "Bloqué"}
-                </span>
+                <div className="flex items-center gap-2 mt-1">
+                  <span className={`text-[10px] font-bold uppercase ${c.active ? "text-green-500" : "text-orange-500"}`}>
+                    {c.active ? "Actif" : "Bloqué"}
+                  </span>
+                  <span className="flex items-center gap-1 text-[10px] font-bold bg-blue-50 text-blue-600 px-1.5 py-0.5 rounded">
+                    <MonitorSmartphone size={10} /> {c.online_count || 0} en ligne
+                  </span>
+                </div>
               </div>
               
               <div className="flex gap-2">
