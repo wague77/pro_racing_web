@@ -119,4 +119,6 @@ export const api = {
     req(`/admin/access-codes/${id}/activate`, { method: "POST", token }),
   deleteCode: (id: string, token: string) =>
     req(`/admin/access-codes/${id}`, { method: "DELETE", token }),
+  getAuditLogs: (token: string, days: number = 7) =>
+    req(`/admin/audit-logs?days=${days}`, { token }),
 };

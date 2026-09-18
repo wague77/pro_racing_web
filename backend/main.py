@@ -854,6 +854,22 @@ async def set_perf_config(body: PerfConfigRequest, _admin: dict = Depends(requir
 
 
 # ---------------------------------------------------------------------------
+# Audit Logs
+# ---------------------------------------------------------------------------
+async def log_audit(action: str, ip: str, status: str, code: str = None, details: str = None):
+    try:
+        await db.audit_logs.insert_one({
+            "timestamp": now_utc().isoformat(),
+            "action": action,
+            "ip": ip,
+            "status": status,
+            "code": code,
+            "details": details
+        })
+    except Exception as e:
+        logger.error(f"Erreur lors de l'enregistrement de l'audit: {e}")
+
+# ---------------------------------------------------------------------------
 # Rate Limiting (Login)
 # ---------------------------------------------------------------------------
 _failed_logins: dict = {}
@@ -864,6 +880,7 @@ def check_login_rate_limit(request: Request):
     info = _failed_logins.get(ip)
     if info:
         if info["count"] >= 2 and info["blocked_until"] > now:
+            asyncio.create_task(log_audit("login_attempt", ip, "blocked", None, "Compte temporairement bloqué"))
             raise HTTPException(status_code=429, detail="Compte temporairement bloqué suite à plusieurs échecs. Veuillez réessayer plus tard.")
         elif info["blocked_until"] <= now:
             # Réinitialiser si le blocage est terminé
@@ -898,8 +915,10 @@ async def admin_login(body: AdminLogin, request: Request):
     stored = admin["hashed_password"] if admin else hash_password("dummy-constant-password")
     if not verify_password(body.password, stored) or not admin:
         record_login_failure(request)
+        asyncio.create_task(log_audit("admin_login", request.client.host if request.client else "unknown", "failed", None, "Mot de passe incorrect"))
         raise HTTPException(status_code=401, detail="Mot de passe incorrect")
     record_login_success(request)
+    asyncio.create_task(log_audit("admin_login", request.client.host if request.client else "unknown", "success", None, "Connexion administrateur réussie"))
     token = create_token(str(admin["_id"]), "admin")
     return TokenResponse(access_token=token, role="admin")
 
@@ -915,9 +934,11 @@ async def redeem_code(body: RedeemRequest, request: Request):
     doc = await db.access_codes.find_one({"code": code})
     if not doc:
         record_login_failure(request)
+        asyncio.create_task(log_audit("user_login", request.client.host if request.client else "unknown", "failed", code, "Code d'accès invalide"))
         raise HTTPException(status_code=400, detail="Code d'accès invalide")
     if not doc.get("active", True):
         record_login_failure(request)
+        asyncio.create_task(log_audit("user_login", request.client.host if request.client else "unknown", "failed", code, "Ce code a été désactivé"))
         raise HTTPException(status_code=400, detail="Ce code a été désactivé")
     max_uses = doc.get("max_uses")
     if max_uses is not None and doc.get("usage_count", 0) >= max_uses:
@@ -936,6 +957,7 @@ async def redeem_code(body: RedeemRequest, request: Request):
         {"$inc": {"usage_count": 1}, "$set": {"last_used_at": now_utc().isoformat()}},
     )
     record_login_success(request)
+    asyncio.create_task(log_audit("user_login", request.client.host if request.client else "unknown", "success", code, "Connexion utilisateur réussie"))
     token = create_token(str(doc["_id"]), "user", {"code": code})
     return TokenResponse(access_token=token, role="user")
 
@@ -1177,9 +1199,9 @@ async def list_codes(_admin: dict = Depends(require_admin)):
         {"$group": {"_id": "$code", "count": {"$sum": 1}}}
     ]
     online_counts = {}
-    async for d in db.devices.aggregate(pipeline):
-        if d["_id"]:
-            online_counts[d["_id"]] = d["count"]
+    async for doc in db.devices.aggregate(pipeline):
+        if doc["_id"]:
+            online_counts[doc["_id"]] = doc["count"]
 
     out = []
     cursor = db.access_codes.find().sort("created_at", -1).limit(2000)
@@ -1187,6 +1209,51 @@ async def list_codes(_admin: dict = Depends(require_admin)):
         doc["online_count"] = online_counts.get(doc["code"], 0)
         out.append(AccessCodeOut(**doc))
     return out
+
+
+@api_router.get("/admin/audit-logs")
+async def get_audit_logs(days: int = 7, _admin: dict = Depends(require_admin)):
+    since = (now_utc() - timedelta(days=days)).isoformat()
+    # 1. Fetch recent logs
+    recent_logs = []
+    async for log in db.audit_logs.find().sort("timestamp", -1).limit(50):
+        log["_id"] = str(log["_id"])
+        recent_logs.append(log)
+    
+    # 2. Aggregate data for charts (by day for the last N days)
+    # Ex: {"2026-09-12": {"success": 10, "failed": 2}, ...}
+    pipeline = [
+        {"$match": {"timestamp": {"$gte": since}}},
+        {"$project": {
+            "date": {"$substr": ["$timestamp", 0, 10]}, # Extract YYYY-MM-DD
+            "status": 1
+        }},
+        {"$group": {
+            "_id": {"date": "$date", "status": "$status"},
+            "count": {"$sum": 1}
+        }},
+        {"$sort": {"_id.date": 1}}
+    ]
+    
+    chart_data = {}
+    async for d in db.audit_logs.aggregate(pipeline):
+        date_str = d["_id"]["date"]
+        status = d["_id"]["status"]
+        count = d["count"]
+        
+        if date_str not in chart_data:
+            chart_data[date_str] = {"date": date_str, "success": 0, "failed": 0, "blocked": 0}
+        
+        if status in ["success", "failed", "blocked"]:
+            chart_data[date_str][status] = count
+            
+    # Convert to sorted list for the frontend
+    chart_list = [chart_data[k] for k in sorted(chart_data.keys())]
+    
+    return {
+        "recent_logs": recent_logs,
+        "chart_data": chart_list
+    }
 
 
 @api_router.websocket("/admin/ws")

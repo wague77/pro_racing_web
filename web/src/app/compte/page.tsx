@@ -13,6 +13,8 @@ import {
   PerfConfig,
   AccessCodesManager,
 } from "@/components/admin/AdminComponents";
+import AuditDashboard from "@/components/admin/AuditDashboard";
+import { FreeAccessControl } from "@/components/admin/FreeAccessControl";
 
 export default function Compte() {
   const router = useRouter();
@@ -42,6 +44,9 @@ export default function Compte() {
   const [codes, setCodes] = useState<any[]>([]);
   const [codesBusy, setCodesBusy] = useState(false);
   const [onlineCounts, setOnlineCounts] = useState<Record<string, number>>({});
+  
+  const [auditData, setAuditData] = useState<any>(null);
+  const [auditBusy, setAuditBusy] = useState(false);
 
   const [freeAccess, setFreeAccess] = useState<{active: boolean; expires_at: string | null} | null>(null);
   const [freeAccessBusy, setFreeAccessBusy] = useState(false);
@@ -100,6 +105,19 @@ export default function Compte() {
     }
   }, [adminToken]);
 
+  const loadAuditData = useCallback(async () => {
+    if (!adminToken) return;
+    setAuditBusy(true);
+    try {
+      const data = await api.getAuditLogs(adminToken, 7);
+      setAuditData(data);
+    } catch (e) {
+      console.error(e);
+    } finally {
+      setAuditBusy(false);
+    }
+  }, [adminToken]);
+
   const loadFreeAccess = useCallback(async () => {
     try {
       const res = await api.freeAccessStatus();
@@ -130,6 +148,7 @@ export default function Compte() {
       loadDevices();
       loadAnalysisCfg();
       loadCodes();
+      loadAuditData();
       loadLoginConfig();
 
       // WebSocket pour les utilisateurs en ligne
@@ -150,7 +169,7 @@ export default function Compte() {
         ws.close();
       };
     }
-  }, [adminToken, loadPerfConfig, loadDevices, loadAnalysisCfg, loadCodes, loadLoginConfig]);
+  }, [adminToken, loadPerfConfig, loadDevices, loadAnalysisCfg, loadCodes, loadAuditData, loadLoginConfig]);
 
   const stepCfg = (key: keyof AnalysisCfg, delta: number, min: number, max: number) => {
     setAnalysisCfg((c) => (c ? { ...c, [key]: Math.min(max, Math.max(min, +(c[key] + delta).toFixed(1))) } : c));
@@ -378,26 +397,7 @@ export default function Compte() {
             <div className="mb-6">
               <h3 className="text-xs font-bold text-gray-500 mb-2 uppercase tracking-wider">Mode Démo & Bouton Connexion</h3>
               <div className="bg-white rounded-xl shadow-sm p-5 flex flex-col gap-4">
-                <div className="flex justify-between items-center">
-                  <div>
-                    <h4 className="font-extrabold text-gray-900 text-base">Accès public gratuit</h4>
-                    <p className="text-sm text-gray-500 mt-1 flex flex-col">
-                      <span>{freeAccess?.active ? "Le mode démo est actuellement activé." : "Le mode démo est désactivé."}</span>
-                      {freeAccess?.active && (
-                        <span className="font-bold text-[#10B981]">
-                          Date d'expiration : {freeAccess.expires_at ? new Date(freeAccess.expires_at).toLocaleString("fr-FR", { dateStyle: "short", timeStyle: "short" }) : "Illimité"}
-                        </span>
-                      )}
-                    </p>
-                  </div>
-                  <button
-                    disabled={freeAccessBusy}
-                    onClick={toggleFreeAccess}
-                    className={`px-4 py-2 rounded-lg font-bold text-sm transition-colors ${freeAccess?.active ? "bg-red-50 text-red-600 hover:bg-red-100" : "bg-[#10B981] text-white hover:bg-green-600"} ${freeAccessBusy ? "opacity-50" : ""}`}
-                  >
-                    {freeAccess?.active ? "Désactiver" : "Activer"}
-                  </button>
-                </div>
+                <FreeAccessControl state={freeAccess} busy={freeAccessBusy} onToggle={toggleFreeAccess} />
 
                 <div className="border-t border-gray-100 pt-4 flex justify-between items-center">
                   <div>
@@ -486,6 +486,8 @@ export default function Compte() {
                 </form>
               </div>
             )}
+
+            <AuditDashboard auditData={auditData} busy={auditBusy} />
 
             <AccessCodesManager codes={codes} busy={codesBusy} onCreate={createCode} onRevoke={revokeCode} onActivate={activateCode} onDelete={deleteCode} onlineCounts={onlineCounts} />
 
