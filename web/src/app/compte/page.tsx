@@ -14,12 +14,8 @@ import {
   AccessCodesManager,
 } from "@/components/admin/AdminComponents";
 import { FreeAccessControl } from "@/components/admin/FreeAccessControl";
-import dynamic from "next/dynamic";
-
-const AuditDashboard = dynamic(() => import("@/components/admin/AuditDashboard"), {
-  ssr: false,
-  loading: () => <div className="text-sm text-gray-500 animate-pulse">Chargement des statistiques...</div>
-});
+import AuditDashboard from "@/components/admin/AuditDashboard";
+import { ErrorBoundary } from "@/components/ui/ErrorBoundary";
 
 export default function Compte() {
   const router = useRouter();
@@ -148,33 +144,57 @@ export default function Compte() {
   }, [loadMe, loadFreeAccess]);
 
   useEffect(() => {
-    if (adminToken) {
-      loadPerfConfig();
-      loadDevices();
-      loadAnalysisCfg();
-      loadCodes();
-      loadAuditData();
-      loadLoginConfig();
+    if (!adminToken) return;
+    loadPerfConfig();
+    loadDevices();
+    loadAnalysisCfg();
+    loadCodes();
+    loadAuditData();
+    loadLoginConfig();
 
-      // WebSocket pour les utilisateurs en ligne
-      const baseUrl = process.env.NODE_ENV === "production" ? "https://pro-racing-api-production.up.railway.app" : (process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:8000");
+    // WebSocket pour les utilisateurs en ligne (sécurisé)
+    let ws: WebSocket | null = null;
+    let isMounted = true;
+
+    try {
+      const baseUrl = process.env.NODE_ENV === "production"
+        ? "https://pro-racing-api-production.up.railway.app"
+        : (process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:8000");
       const wsUrl = baseUrl.replace(/^http/, "ws") + "/api/admin/ws?token=" + encodeURIComponent(adminToken);
       
-      const ws = new WebSocket(wsUrl);
+      ws = new WebSocket(wsUrl);
       ws.onmessage = (event) => {
+        if (!isMounted) return;
         try {
           const data = JSON.parse(event.data);
-          setOnlineCounts(data);
-        } catch (e) {
-          console.error("Invalid WS message", e);
+          if (data && typeof data === "object") {
+            setOnlineCounts(data);
+          }
+        } catch {
+          /* ignore */
         }
       };
-
-      return () => {
-        ws.close();
+      ws.onerror = () => {
+        // Silently ignore connection errors so it never crashes the page
       };
+    } catch {
+      /* ignore if WebSocket unsupported or invalid */
     }
+
+    return () => {
+      isMounted = false;
+      if (ws) {
+        try {
+          if (ws.readyState === WebSocket.OPEN || ws.readyState === WebSocket.CONNECTING) {
+            ws.close();
+          }
+        } catch {
+          /* ignore */
+        }
+      }
+    };
   }, [adminToken, loadPerfConfig, loadDevices, loadAnalysisCfg, loadCodes, loadAuditData, loadLoginConfig]);
+
 
   const stepCfg = (key: keyof AnalysisCfg, delta: number, min: number, max: number) => {
     setAnalysisCfg((c) => (c ? { ...c, [key]: Math.min(max, Math.max(min, +(c[key] + delta).toFixed(1))) } : c));
@@ -492,17 +512,28 @@ export default function Compte() {
               </div>
             )}
 
-            <AuditDashboard auditData={auditData} busy={auditBusy} />
+            <ErrorBoundary fallbackTitle="Impossible de charger le graphique d'activité">
+              <AuditDashboard auditData={auditData} busy={auditBusy} />
+            </ErrorBoundary>
 
-            <AccessCodesManager codes={codes} busy={codesBusy} onCreate={createCode} onRevoke={revokeCode} onActivate={activateCode} onDelete={deleteCode} onlineCounts={onlineCounts} />
+            <ErrorBoundary fallbackTitle="Erreur dans le gestionnaire de codes d'accès">
+              <AccessCodesManager codes={codes} busy={codesBusy} onCreate={createCode} onRevoke={revokeCode} onActivate={activateCode} onDelete={deleteCode} onlineCounts={onlineCounts} />
+            </ErrorBoundary>
 
-            <AnalysisConfig cfg={analysisCfg} busy={cfgBusy} onStep={stepCfg} onSave={saveAnalysisCfg} />
+            <ErrorBoundary fallbackTitle="Erreur dans la configuration des analyses">
+              <AnalysisConfig cfg={analysisCfg} busy={cfgBusy} onStep={stepCfg} onSave={saveAnalysisCfg} />
+            </ErrorBoundary>
 
-            <DeviceList stats={deviceStats} devices={devices} onToggleDevice={toggleDevice} />
+            <ErrorBoundary fallbackTitle="Erreur dans la liste des appareils">
+              <DeviceList stats={deviceStats} devices={devices} onToggleDevice={toggleDevice} />
+            </ErrorBoundary>
 
-            <PerfConfig perfDays={perfDays} busy={perfBusy} onUpdate={updatePerf} />
+            <ErrorBoundary fallbackTitle="Erreur dans la configuration des performances">
+              <PerfConfig perfDays={perfDays} busy={perfBusy} onUpdate={updatePerf} />
+            </ErrorBoundary>
 
             {actionErr && <p className="text-red-500 text-sm font-semibold mb-4 px-2">{actionErr}</p>}
+
           </>
         )}
 

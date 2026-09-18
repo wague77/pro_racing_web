@@ -1069,6 +1069,8 @@ async def me(user: dict = Depends(require_user)):
 async def validate_session(device_id: Optional[str] = None, user: dict = Depends(require_user)):
     """Vérifie que la session est toujours valide (code actif/non expiré, appareil non bloqué).
     Renvoie 401 si le code a été révoqué/expiré ou si l'appareil a été bloqué (déconnexion à distance)."""
+    if user.get("role") == "admin":
+        return {"valid": True}
     # Blocage d'un appareil précis (révocation à distance par l'admin)
     if device_id:
         dev = await db.devices.find_one({"_id": device_id})
@@ -1077,8 +1079,7 @@ async def validate_session(device_id: Optional[str] = None, user: dict = Depends
                 raise HTTPException(status_code=401, detail="Cet appareil a été bloqué par l'administrateur")
             else:
                 await db.devices.update_one({"_id": device_id}, {"$set": {"last_seen": now_utc().isoformat()}})
-    if user.get("role") == "admin":
-        return {"valid": True}
+
     if user.get("role") == "demo":
         return {"valid": True}
     code = user.get("code")
