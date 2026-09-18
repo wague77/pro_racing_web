@@ -183,7 +183,7 @@ export function ParticipantModal({ participant, onClose }: ParticipantModalProps
                 <span className="font-semibold text-[#8E8E93]">Gains cette année</span>
                 <span className="font-extrabold text-[#10B981]">{formatEuro(participant.gainsAnneeEnCours)}</span>
               </div>
-              {participant.cote !== undefined && (
+              {participant.cote != null && (
                 <>
                   <div className="h-px bg-gray-100 w-full" />
                   <div className="flex justify-between items-center text-sm">
