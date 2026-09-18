@@ -20,7 +20,9 @@ interface Participant {
   nombreCourses?: number;
   nombreVictoires?: number;
   nombrePlaces?: number;
-  gainsParticipant?: Gains;
+  gainsCarriere?: number;
+  gainsAnneeEnCours?: number;
+  cote?: number;
   nomPere?: string;
   nomMere?: string;
   urlCasaque?: string;
@@ -126,13 +128,22 @@ export function ParticipantModal({ participant, onClose }: ParticipantModalProps
             <div className="flex flex-col gap-2.5">
               <div className="flex justify-between items-center text-sm">
                 <span className="font-semibold text-[#8E8E93]">Gains Carrière</span>
-                <span className="font-extrabold text-[#1C1C1E]">{formatEuro(participant.gainsParticipant?.gainsCarriere)}</span>
+                <span className="font-extrabold text-[#1C1C1E]">{formatEuro(participant.gainsCarriere)}</span>
               </div>
               <div className="h-px bg-gray-100 w-full" />
               <div className="flex justify-between items-center text-sm">
                 <span className="font-semibold text-[#8E8E93]">Gains cette année</span>
-                <span className="font-extrabold text-[#10B981]">{formatEuro(participant.gainsParticipant?.gainsAnneeEnCours)}</span>
+                <span className="font-extrabold text-[#10B981]">{formatEuro(participant.gainsAnneeEnCours)}</span>
               </div>
+              {participant.cote !== undefined && (
+                <>
+                  <div className="h-px bg-gray-100 w-full" />
+                  <div className="flex justify-between items-center text-sm">
+                    <span className="font-semibold text-[#8E8E93]">Dernière Cote (PMU)</span>
+                    <span className="font-extrabold text-[#F59E0B]">{participant.cote.toFixed(1)}</span>
+                  </div>
+                </>
+              )}
             </div>
           </div>
 
