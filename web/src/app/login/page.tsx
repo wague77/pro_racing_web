@@ -200,14 +200,29 @@ export default function Login() {
         )}
 
         {loginCfg?.payment_link && (
-          <a
-            href={loginCfg.payment_link}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="w-full flex justify-center items-center py-4 mt-4 rounded-2xl bg-gradient-to-r from-orange-500 to-amber-500 text-white font-black text-base transition-all hover:scale-[1.02] active:scale-[0.98] shadow-lg shadow-orange-500/20"
-          >
-            S'abonner maintenant
-          </a>
+          <div className="mt-8 bg-gradient-to-br from-amber-500/10 to-orange-600/10 border border-orange-500/30 rounded-[24px] p-5 relative overflow-hidden group">
+            {/* Glossy shine effect */}
+            <div className="absolute inset-0 bg-gradient-to-tr from-white/0 via-white/10 to-white/0 -translate-x-full group-hover:translate-x-full transition-transform duration-1000 ease-in-out" />
+            
+            <div className="flex flex-col items-center text-center relative z-10">
+              <div className="bg-gradient-to-br from-amber-400 to-orange-500 w-12 h-12 rounded-full flex items-center justify-center mb-3 shadow-[0_0_20px_rgba(245,158,11,0.4)]">
+                <Award size={24} color="#ffffff" className="animate-pulse" />
+              </div>
+              <h3 className="text-xl font-black text-white mb-1">Passez au niveau supérieur</h3>
+              <p className="text-sm text-gray-300 font-medium mb-4">
+                Débloquez <span className="text-orange-400 font-bold">le Top 8 IA</span>, les <span className="text-orange-400 font-bold">Couplés 90%</span> et nos <span className="text-orange-400 font-bold">Tocards exclusifs</span>.
+              </p>
+              
+              <a
+                href={loginCfg.payment_link}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="w-full flex justify-center items-center py-3.5 rounded-xl bg-gradient-to-r from-orange-500 to-amber-500 text-white font-black text-base transition-all hover:scale-[1.02] active:scale-[0.98] shadow-[0_8px_20px_rgba(245,158,11,0.3)] hover:shadow-[0_8px_25px_rgba(245,158,11,0.5)]"
+              >
+                S'abonner maintenant 🚀
+              </a>
+            </div>
+          </div>
         )}
 
         {loginCfg?.whatsapp_link && (
