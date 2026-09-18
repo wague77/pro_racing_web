@@ -45,7 +45,7 @@ export default function Compte() {
   const [freeAccess, setFreeAccess] = useState<{active: boolean; expires_at: string | null} | null>(null);
   const [freeAccessBusy, setFreeAccessBusy] = useState(false);
 
-  const [loginConfig, setLoginConfig] = useState<{payment_link: string; show_demo_button: boolean} | null>(null);
+  const [loginConfig, setLoginConfig] = useState<{payment_link: string; whatsapp_link?: string; show_demo_button: boolean} | null>(null);
   const [loginConfigBusy, setLoginConfigBusy] = useState(false);
 
   const loadMe = useCallback(async () => {
@@ -255,7 +255,7 @@ export default function Compte() {
 
   const toggleDemoButton = async () => {
     if (!adminToken) return;
-    const currentCfg = loginConfig || { payment_link: "", show_demo_button: true };
+    const currentCfg = loginConfig || { payment_link: "", whatsapp_link: "", show_demo_button: true };
     const updatedCfg = { ...currentCfg, show_demo_button: !currentCfg.show_demo_button };
     setLoginConfigBusy(true);
     setActionErr(null);
@@ -423,6 +423,17 @@ export default function Compte() {
                       className="w-full bg-gray-50 border border-gray-200 rounded-lg px-3 py-2 text-sm text-gray-900 outline-none focus:border-[#10B981]"
                     />
                     <p className="text-xs text-gray-400 mt-1">Laissez vide pour masquer le bouton "S'abonner".</p>
+                  </div>
+                  <div>
+                    <h4 className="font-extrabold text-gray-900 text-sm mb-2">Lien WhatsApp</h4>
+                    <input
+                      type="url"
+                      placeholder="https://chat.whatsapp.com/..."
+                      value={loginConfig.whatsapp_link || ""}
+                      onChange={(e) => setLoginConfig({ ...loginConfig, whatsapp_link: e.target.value })}
+                      className="w-full bg-gray-50 border border-gray-200 rounded-lg px-3 py-2 text-sm text-gray-900 outline-none focus:border-[#10B981]"
+                    />
+                    <p className="text-xs text-gray-400 mt-1">Laissez vide pour masquer le bouton WhatsApp.</p>
                   </div>
                   <div className="flex items-center justify-between border-t border-gray-100 pt-4">
                     <div>

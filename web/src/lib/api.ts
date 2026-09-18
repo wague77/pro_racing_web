@@ -57,7 +57,7 @@ export const api = {
   setFreeAccess: (enabled: boolean, hours: number | null, token: string) =>
     req("/admin/free-access", { method: "POST", body: { enabled, hours }, token }),
   getLoginConfig: () => req("/auth/login-config"),
-  setLoginConfig: (cfg: { payment_link: string; show_demo_button: boolean }, token: string) =>
+  setLoginConfig: (cfg: { payment_link: string; whatsapp_link?: string; show_demo_button: boolean }, token: string) =>
     req("/admin/login-config", { method: "POST", body: cfg, token }),
 
   // PMU

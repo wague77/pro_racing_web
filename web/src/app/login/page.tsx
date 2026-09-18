@@ -21,7 +21,7 @@ export default function Login() {
   // "code" | "admin"
   const [mode, setMode] = useState<"code" | "admin">("code");
 
-  const [loginCfg, setLoginCfg] = useState<{payment_link: string; show_demo_button: boolean} | null>(null);
+  const [loginCfg, setLoginCfg] = useState<{payment_link: string; whatsapp_link?: string; show_demo_button: boolean} | null>(null);
   const [freeAccess, setFreeAccess] = useState<{active: boolean} | null>(null);
 
   useEffect(() => {
@@ -207,6 +207,17 @@ export default function Login() {
             className="w-full flex justify-center items-center py-4 mt-4 rounded-2xl bg-gradient-to-r from-orange-500 to-amber-500 text-white font-black text-base transition-all hover:scale-[1.02] active:scale-[0.98] shadow-lg shadow-orange-500/20"
           >
             S'abonner maintenant
+          </a>
+        )}
+
+        {loginCfg?.whatsapp_link && (
+          <a
+            href={loginCfg.whatsapp_link}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="w-full flex justify-center items-center py-4 mt-4 rounded-2xl bg-gradient-to-r from-[#25D366] to-[#128C7E] text-white font-black text-base transition-all hover:scale-[1.02] active:scale-[0.98] shadow-lg shadow-[#25D366]/20"
+          >
+            Nous contacter sur WhatsApp
           </a>
         )}
       </div>
