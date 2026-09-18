@@ -64,7 +64,9 @@ export function Sidebar() {
       className="hidden md:flex flex-col w-64 h-screen fixed left-0 top-0 py-8 px-4 z-50"
     >
       <div className="text-2xl font-black mb-8 px-4 text-gradient flex items-center gap-3">
-        <Trophy size={28} className="text-[#10B981]" />
+        <div className="w-8 h-8 rounded-xl overflow-hidden shrink-0 shadow-[0_0_15px_rgba(16,185,129,0.2)]">
+          <img src="/logo.jpg" alt="Logo" width={32} height={32} className="object-cover" />
+        </div>
         Pro-Racing
       </div>
       <div className="flex flex-col space-y-2 flex-1">

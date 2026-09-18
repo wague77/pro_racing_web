@@ -98,8 +98,8 @@ export default function Login() {
         {/* Top Content (Hero) */}
         <div className="relative z-10 px-6 pt-20 md:pt-0 max-w-md mx-auto md:ml-20 w-full text-center md:text-left">
           <div className="flex flex-col items-center md:items-start gap-4">
-            <div className="w-16 h-16 rounded-3xl bg-gradient-to-br from-[#10B981] to-[#047857] flex items-center justify-center shadow-[0_0_30px_rgba(16,185,129,0.3)]">
-              <Award size={36} color="#ffffff" />
+            <div className="w-20 h-20 rounded-3xl overflow-hidden shadow-[0_0_30px_rgba(212,175,55,0.3)]">
+              <img src="/logo.jpg" alt="Logo" className="w-full h-full object-cover" />
             </div>
             <h1 className="text-4xl md:text-5xl lg:text-6xl font-black text-white tracking-tight">Pro-Racing</h1>
           </div>
