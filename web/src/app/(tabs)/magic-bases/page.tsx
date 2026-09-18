@@ -167,12 +167,12 @@ export default function MagicBasesPage() {
         total += 99; // Pénalité pour cheval sans cote (outsider non renseigné)
       }
     }
-    return hasAny ? Math.round(total * 10) / 10 : null;
+    return hasAny ? Math.round(total) : null;
   };
 
   const getCombSumFormatted = (comb: number[]): string => {
     const sum = getCombSumCotes(comb);
-    return sum !== null ? sum.toFixed(1) : "—";
+    return sum !== null ? Math.round(sum).toString() : "—";
   };
 
   const getCombTooltip = (comb: number[]): string => {
@@ -184,7 +184,7 @@ export default function MagicBasesPage() {
         return `N°${n} [${c !== null ? c.toFixed(1) : "?"}]`;
       })
       .join(" + ");
-    return `Somme des cotes : ${sum.toFixed(1)} (${details})`;
+    return `Note : ${Math.round(sum)} (${details})`;
   };
 
   const sortCombinaisonsParCotes = (combs: number[][]): number[][] => {
@@ -379,7 +379,7 @@ export default function MagicBasesPage() {
                     <div>
                       <h3 className="font-black text-lg">TIERCÉ</h3>
                       <span className="text-xs text-[#D4AF37] font-semibold">
-                        Trié par somme des cotes croissante
+                        Trié par note croissante
                       </span>
                     </div>
                     <div className="text-right">
@@ -393,7 +393,7 @@ export default function MagicBasesPage() {
                   </div>
                   <div className="p-4">
                     <div className="flex items-center justify-between text-[11px] font-bold text-gray-400 uppercase tracking-wider px-2 pb-2 mb-2 border-b border-white/5">
-                      <span className="text-[#D4AF37]">Somme cotes</span>
+                      <span className="text-[#D4AF37]">Notes</span>
                       <span>Combinaison</span>
                     </div>
                     <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
@@ -422,7 +422,7 @@ export default function MagicBasesPage() {
                     <div>
                       <h3 className="font-black text-lg">COUPLÉ PLACÉ</h3>
                       <span className="text-xs text-[#D4AF37] font-semibold">
-                        Trié par somme des cotes croissante
+                        Trié par note croissante
                       </span>
                     </div>
                     <div className="text-right">
@@ -436,7 +436,7 @@ export default function MagicBasesPage() {
                   </div>
                   <div className="p-4">
                     <div className="flex items-center justify-between text-[11px] font-bold text-gray-400 uppercase tracking-wider px-2 pb-2 mb-2 border-b border-white/5">
-                      <span className="text-[#D4AF37]">Somme cotes</span>
+                      <span className="text-[#D4AF37]">Notes</span>
                       <span>Combinaison</span>
                     </div>
                     <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
@@ -467,7 +467,7 @@ export default function MagicBasesPage() {
                 <div className="bg-gradient-to-r from-emerald-900/40 to-[#1C1C1E] p-4 flex justify-between items-center border-b border-emerald-500/20">
                   <div>
                     <h3 className="font-black text-lg text-emerald-400">QUINTÉ - GARANTIE 100% TIERCE</h3>
-                    <p className="text-xs text-gray-400">Joue un Quinté, garantit le Tiercé à 100% (sans ordre) · Trié par somme des cotes croissante</p>
+                    <p className="text-xs text-gray-400">Joue un Quinté, garantit le Tiercé à 100% (sans ordre) · Trié par note croissante</p>
                   </div>
                   <div className="text-right">
                     <div className="text-emerald-400 font-black text-2xl">
@@ -477,7 +477,7 @@ export default function MagicBasesPage() {
                 </div>
                 <div className="p-4">
                   <div className="flex items-center justify-between text-[11px] font-bold text-gray-400 uppercase tracking-wider px-2 pb-2 mb-2 border-b border-white/5">
-                    <span className="text-emerald-400">Somme cotes</span>
+                    <span className="text-emerald-400">Notes</span>
                     <span>Combinaison</span>
                   </div>
                   <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
