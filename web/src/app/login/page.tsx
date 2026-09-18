@@ -202,27 +202,76 @@ export default function Login() {
         )}
 
         {loginCfg?.payment_link && (
-          <div className="mt-8 bg-gradient-to-br from-amber-500/10 to-orange-600/10 border border-orange-500/30 rounded-[24px] p-5 relative overflow-hidden group">
-            {/* Glossy shine effect */}
-            <div className="absolute inset-0 bg-gradient-to-tr from-white/0 via-white/10 to-white/0 -translate-x-full group-hover:translate-x-full transition-transform duration-1000 ease-in-out" />
+          <div className="mt-8 relative overflow-hidden rounded-[24px] group cursor-pointer transition-all duration-300 hover:scale-[1.02] shadow-[0_0_40px_rgba(245,158,11,0.15)] hover:shadow-[0_0_50px_rgba(245,158,11,0.3)]">
+            {/* Base Background */}
+            <div className="absolute inset-0 bg-gradient-to-br from-[#1a1a1a] via-[#0A0A0C] to-[#1a1a1a] border border-amber-500/30 rounded-[24px]" />
             
-            <div className="flex flex-col items-center text-center relative z-10">
-              <div className="bg-gradient-to-br from-amber-400 to-orange-500 w-12 h-12 rounded-full flex items-center justify-center mb-3 shadow-[0_0_20px_rgba(245,158,11,0.4)]">
-                <Award size={24} color="#ffffff" className="animate-pulse" />
+            {/* Animated Gold Shimmers */}
+            <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-amber-500/20 via-transparent to-transparent opacity-80" />
+            <div className="absolute -inset-full bg-gradient-to-r from-transparent via-amber-200/10 to-transparent -translate-x-full group-hover:animate-[shimmer_1.5s_infinite] skew-x-12" />
+            <div className="absolute bottom-0 left-0 w-full h-1/2 bg-gradient-to-t from-amber-500/10 to-transparent" />
+            
+            {/* Glowing Border effect */}
+            <div className="absolute inset-0 rounded-[24px] border border-amber-400/20 group-hover:border-amber-400/50 transition-colors duration-500" />
+
+            <div className="relative z-10 p-6 flex flex-col items-center text-center">
+              {/* Floating Badge */}
+              <div className="absolute -top-3 right-4 bg-gradient-to-r from-red-500 to-orange-600 text-white text-xs font-black px-3 py-1 rounded-full shadow-lg shadow-red-500/30 animate-pulse uppercase tracking-wider border border-white/20">
+                VIP Exclusif
               </div>
-              <h3 className="text-xl font-black text-white mb-1">Passez au niveau supérieur</h3>
-              <p className="text-sm text-gray-300 font-medium mb-4">
-                Débloquez <span className="text-orange-400 font-bold">le Top 8 IA</span>, les <span className="text-orange-400 font-bold">Couplés 90%</span> et nos <span className="text-orange-400 font-bold">Tocards exclusifs</span>.
-              </p>
+
+              {/* Icon */}
+              <div className="relative mb-4">
+                <div className="absolute inset-0 bg-amber-500/30 blur-xl rounded-full animate-pulse" />
+                <div className="bg-gradient-to-br from-amber-300 via-amber-500 to-orange-600 w-16 h-16 rounded-full flex items-center justify-center shadow-[0_0_30px_rgba(245,158,11,0.5)] border-2 border-white/20">
+                  <Award size={32} color="#ffffff" />
+                </div>
+              </div>
               
+              {/* Typography */}
+              <h3 className="text-2xl font-black bg-gradient-to-r from-amber-200 via-amber-400 to-orange-500 bg-clip-text text-transparent mb-2">
+                Passez au Niveau IA Pro
+              </h3>
+              
+              <div className="flex flex-col gap-2 mb-6 w-full text-left px-2">
+                <div className="flex items-center gap-3 bg-white/5 rounded-xl p-2.5 border border-white/5">
+                  <div className="bg-green-500/20 p-1 rounded-full">
+                    <svg className="w-4 h-4 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M5 13l4 4L19 7" /></svg>
+                  </div>
+                  <span className="text-gray-200 text-sm font-semibold">Le <span className="text-amber-400">Top 8 IA</span> Ultra Précis</span>
+                </div>
+                <div className="flex items-center gap-3 bg-white/5 rounded-xl p-2.5 border border-white/5">
+                  <div className="bg-green-500/20 p-1 rounded-full">
+                    <svg className="w-4 h-4 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M5 13l4 4L19 7" /></svg>
+                  </div>
+                  <span className="text-gray-200 text-sm font-semibold">Couplés Gagnants à <span className="text-amber-400">90%</span></span>
+                </div>
+                <div className="flex items-center gap-3 bg-white/5 rounded-xl p-2.5 border border-white/5">
+                  <div className="bg-green-500/20 p-1 rounded-full">
+                    <svg className="w-4 h-4 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M5 13l4 4L19 7" /></svg>
+                  </div>
+                  <span className="text-gray-200 text-sm font-semibold">Bases & <span className="text-amber-400">Tocards Exclusifs</span></span>
+                </div>
+              </div>
+              
+              {/* Call to action */}
               <a
                 href={loginCfg.payment_link}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="w-full flex justify-center items-center py-3.5 rounded-xl bg-gradient-to-r from-orange-500 to-amber-500 text-white font-black text-base transition-all hover:scale-[1.02] active:scale-[0.98] shadow-[0_8px_20px_rgba(245,158,11,0.3)] hover:shadow-[0_8px_25px_rgba(245,158,11,0.5)]"
+                className="w-full relative group/btn overflow-hidden rounded-xl bg-gradient-to-r from-amber-500 to-orange-600 p-[2px]"
               >
-                S'abonner maintenant 🚀
+                <div className="absolute inset-0 bg-white/20 group-hover/btn:bg-transparent transition-colors" />
+                <div className="relative bg-gradient-to-r from-amber-500 to-orange-600 px-4 py-3.5 rounded-[10px] flex justify-center items-center gap-2 shadow-inner">
+                  <span className="text-white font-black text-lg tracking-wide drop-shadow-md">
+                    S'abonner Maintenant
+                  </span>
+                  <PlayCircle size={20} className="text-white drop-shadow-md" />
+                </div>
               </a>
+              <p className="text-xs text-gray-400 mt-3 font-medium uppercase tracking-wider">
+                Gagnez tous les jours avec Pro-Racing
+              </p>
             </div>
           </div>
         )}

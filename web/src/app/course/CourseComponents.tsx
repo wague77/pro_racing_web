@@ -35,7 +35,7 @@ export function ArriveeCard({ arrivee, onHorseClick }: { arrivee: any[], onHorse
   );
 }
 
-import { computeScore } from "./ParticipantModal";
+import { calculerScore } from "@/lib/score";
 
 export function ParticipantRow({
   part,
@@ -49,7 +49,7 @@ export function ParticipantRow({
   onPress: () => void;
 }) {
   const scratched = part.statut && part.statut !== "PARTANT";
-  const horseScore = computeScore(part);
+  const horseScore = calculerScore(part);
   const scoreColor = horseScore >= 75 ? "#10B981" : horseScore >= 50 ? "#F59E0B" : "#EF4444";
 
   return (
