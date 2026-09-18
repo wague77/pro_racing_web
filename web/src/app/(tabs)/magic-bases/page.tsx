@@ -70,6 +70,7 @@ export default function MagicBasesPage() {
           setBase(tries[0].numPmu.toString());
         }
         setFilters(f => ({ ...f, optimiseIndice: 5, optimiseChances: 75 }));
+      }
     } catch (e: any) {
       setCotesError(e.message || "Erreur de chargement");
     } finally {
