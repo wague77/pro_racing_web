@@ -211,7 +211,7 @@ export function ParticipantModal({ participant, onClose }: ParticipantModalProps
             ) : (
               <p className="text-sm font-semibold text-[#8E8E93]">Inédit ou musique inconnue.</p>
             )}
-            {participant.musique && <p className="text-xs text-[#8E8E93] mt-3 font-semibold">Chaîne brute : {participant.musique}</p>}
+            {participant.musique && typeof participant.musique === "string" && <p className="text-xs text-[#8E8E93] mt-3 font-semibold">Chaîne brute : {participant.musique}</p>}
           </div>
 
           {(participant.nomPere || participant.nomMere) && (

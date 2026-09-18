@@ -92,7 +92,7 @@ export function ParticipantRow({
             <span className="truncate">{part.entraineur}</span>
           ) : null}
         </div>
-        {part.musique && <span className="text-sm text-[#10B981] font-semibold tracking-wide mt-1 truncate">{part.musique}</span>}
+        {part.musique && typeof part.musique === "string" && <span className="text-sm text-[#10B981] font-semibold tracking-wide mt-1 truncate">{part.musique}</span>}
       </div>
 
       <div className="flex flex-col items-center shrink-0">
