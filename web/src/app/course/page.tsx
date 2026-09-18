@@ -255,7 +255,15 @@ function CourseContent() {
         <div className="flex-1 flex flex-col p-5 pb-10 gap-2">
           {participants.length > 0 ? (
             <>
-              {arrivee.length > 0 && <ArriveeCard arrivee={arrivee} />}
+              {arrivee.length > 0 && (
+                <ArriveeCard 
+                  arrivee={arrivee} 
+                  onHorseClick={(h) => {
+                    const fullPart = participants.find((p) => p.numPmu === h.numPmu);
+                    if (fullPart) setSelectedParticipant(fullPart);
+                  }}
+                />
+              )}
               {rapports.length > 0 && <RapportsCard rapports={rapports} />}
               <div className="flex flex-row gap-3 mb-3">
                 {(["numero", "cote"] as Sort[]).map((s) => (
@@ -317,11 +325,33 @@ function CourseContent() {
           remaining={Math.max(0, REWARDED_DAILY_LIMIT - rewardsUsed)}
         />
       ) : segment === "couples" ? (
-        <CouplesView analysis={cotes.analysis} participants={participants} onHorseClick={setSelectedParticipant} />
+        <CouplesView 
+          analysis={cotes.analysis} 
+          participants={participants} 
+          onHorseClick={(h) => {
+            const fullPart = participants.find((p) => p.numPmu === h.numPmu);
+            if (fullPart) setSelectedParticipant(fullPart);
+          }} 
+        />
       ) : segment === "pronostic" ? (
-        <PronosticView selection={selection} tocards={tocards} arrivee={arrivee} onHorseClick={setSelectedParticipant} />
+        <PronosticView 
+          selection={selection} 
+          tocards={tocards} 
+          arrivee={arrivee} 
+          onHorseClick={(h) => {
+            const fullPart = participants.find((p) => p.numPmu === h.numPmu);
+            if (fullPart) setSelectedParticipant(fullPart);
+          }} 
+        />
       ) : (
-        <CotesView analysis={cotes.analysis} participants={participants} onHorseClick={setSelectedParticipant} />
+        <CotesView 
+          analysis={cotes.analysis} 
+          participants={participants} 
+          onHorseClick={(h) => {
+            const fullPart = participants.find((p) => p.numPmu === h.numPmu);
+            if (fullPart) setSelectedParticipant(fullPart);
+          }} 
+        />
       )}
       <ParticipantModal participant={selectedParticipant} onClose={() => setSelectedParticipant(null)} />
     </div>

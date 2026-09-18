@@ -4,7 +4,7 @@ import React from "react";
 import Image from "next/image";
 import { OddsBadge } from "@/components/ui";
 
-export function ArriveeCard({ arrivee }: { arrivee: any[] }) {
+export function ArriveeCard({ arrivee, onHorseClick }: { arrivee: any[], onHorseClick?: (part: any) => void }) {
   const medal = (o: number) =>
     o === 1 ? "#D4AF37" : o === 2 ? "#A8A8AD" : o === 3 ? "#CD7F32" : "#EBEBEF";
 
@@ -22,13 +22,20 @@ export function ArriveeCard({ arrivee }: { arrivee: any[] }) {
           <div className="w-6 h-6 rounded-[7px] bg-white/20 flex items-center justify-center shrink-0">
             <span className="text-white font-extrabold text-sm">{a.numPmu}</span>
           </div>
-          <span className="flex-1 text-white font-semibold text-base truncate">{a.nom}</span>
+          <span 
+            className="flex-1 text-white font-semibold text-base truncate hover:underline hover:text-[#10B981] cursor-pointer"
+            onClick={(e) => { e.stopPropagation(); onHorseClick && onHorseClick(a); }}
+          >
+            {a.nom}
+          </span>
           {a.cote != null && <span className="text-white/70 font-bold text-sm">{a.cote.toFixed(1)}</span>}
         </div>
       ))}
     </div>
   );
 }
+
+import { computeScore } from "./ParticipantModal";
 
 export function ParticipantRow({
   part,
@@ -42,6 +49,9 @@ export function ParticipantRow({
   onPress: () => void;
 }) {
   const scratched = part.statut && part.statut !== "PARTANT";
+  const horseScore = computeScore(part);
+  const scoreColor = horseScore >= 75 ? "#10B981" : horseScore >= 50 ? "#F59E0B" : "#EF4444";
+
   return (
     <div
       onClick={onPress}
@@ -67,9 +77,14 @@ export function ParticipantRow({
       )}
 
       <div className="flex-1 min-w-0 flex flex-col">
-        <span className="text-lg font-bold text-[#1C1C1E] truncate">
-          {part.nom}
-        </span>
+        <div className="flex flex-row items-center gap-2 truncate">
+          <span className="text-lg font-bold text-[#1C1C1E] truncate">
+            {part.nom}
+          </span>
+          <div className="flex items-center gap-1 rounded-full px-1.5 py-0.5 border" style={{ borderColor: scoreColor, backgroundColor: `${scoreColor}10` }}>
+            <span className="text-[10px] font-black" style={{ color: scoreColor }}>{horseScore}</span>
+          </div>
+        </div>
         <div className="flex flex-row gap-1 text-sm text-[#8E8E93] mt-0.5 truncate">
           {part.driver ? (
             <span className="truncate">{part.driver}</span>

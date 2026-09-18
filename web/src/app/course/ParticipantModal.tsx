@@ -26,6 +26,7 @@ interface Participant {
   nomPere?: string;
   nomMere?: string;
   urlCasaque?: string;
+  scoreIA?: number;
 }
 
 interface ParticipantModalProps {
@@ -45,6 +46,39 @@ function formatEuro(cents?: number) {
   return new Intl.NumberFormat("fr-FR", { style: "currency", currency: "EUR", maximumFractionDigits: 0 }).format(cents / 100);
 }
 
+export function computeScore(p: Participant): number {
+  if (p.scoreIA != null) return p.scoreIA;
+
+  let score = 50;
+  const courses = p.nombreCourses || 0;
+  const victoires = p.nombreVictoires || 0;
+  const places = p.nombrePlaces || 0;
+  
+  if (courses > 0) {
+    score += (victoires / courses) * 30;
+    score += (places / courses) * 20;
+  }
+
+  if (p.musique) {
+    let recent = p.musique.slice(0, 10);
+    const ones = (recent.match(/1/g) || []).length;
+    const twos = (recent.match(/2/g) || []).length;
+    const threes = (recent.match(/3/g) || []).length;
+    const fails = (recent.match(/[DA]/g) || []).length;
+    
+    let musiquePoints = (ones * 5) + (twos * 3) + (threes * 1) - (fails * 2);
+    score += Math.max(-10, Math.min(20, musiquePoints));
+  }
+
+  if (p.gainsCarriere) {
+    if (p.gainsCarriere > 50000000) score += 10;
+    else if (p.gainsCarriere > 10000000) score += 5;
+    else if (p.gainsCarriere > 5000000) score += 2;
+  }
+
+  return Math.max(0, Math.min(100, Math.round(score)));
+}
+
 export function ParticipantModal({ participant, onClose }: ParticipantModalProps) {
   const [isVisible, setIsVisible] = useState(false);
 
@@ -62,6 +96,8 @@ export function ParticipantModal({ participant, onClose }: ParticipantModalProps
   if (!participant) return null;
 
   const mParts = parseMusique(participant.musique || "");
+  const horseScore = computeScore(participant);
+  const scoreColor = horseScore >= 75 ? "#10B981" : horseScore >= 50 ? "#F59E0B" : "#EF4444";
 
   return (
     <div 
@@ -86,9 +122,21 @@ export function ParticipantModal({ participant, onClose }: ParticipantModalProps
               )}
             </div>
           </div>
-          <button onClick={onClose} className="p-2 bg-gray-100 hover:bg-gray-200 rounded-full transition-colors">
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#1C1C1E" strokeWidth="2.5" strokeLinecap="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
-          </button>
+          <div className="flex flex-row items-center gap-4">
+            <div className="flex flex-col items-center">
+              <div className="relative flex items-center justify-center w-10 h-10">
+                <svg className="w-full h-full transform -rotate-90" viewBox="0 0 36 36">
+                  <path fill="none" stroke="#EBEBEF" strokeWidth="3" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" />
+                  <path fill="none" stroke={scoreColor} strokeWidth="3" strokeDasharray={`${horseScore}, 100`} d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" />
+                </svg>
+                <div className="absolute font-extrabold text-[#1C1C1E] text-[10px]">{horseScore}</div>
+              </div>
+              <span className="text-[8px] font-bold text-[#8E8E93] uppercase mt-0.5">Note</span>
+            </div>
+            <button onClick={onClose} className="p-2 bg-gray-100 hover:bg-gray-200 rounded-full transition-colors shrink-0">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#1C1C1E" strokeWidth="2.5" strokeLinecap="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+            </button>
+          </div>
         </div>
 
         <div className="p-5 overflow-y-auto flex-1 flex flex-col gap-6">
