@@ -48,7 +48,7 @@ export default function MagicBasesPage() {
     setParticipants([]);
 
     try {
-      const d = format(date, "yyyyMMdd");
+      const d = format(date, "ddMMyyyy");
       const res = await fetch(`/api/pmu-cotes?date=${d}&r=${reunion}&c=${course}`);
       
       if (!res.ok) {
