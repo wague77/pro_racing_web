@@ -273,6 +273,7 @@ export function AccessCodesManager({
   onRevoke,
   onActivate,
   onDelete,
+  onlineCounts = {},
 }: {
   codes: any[];
   busy: boolean;
