@@ -13,6 +13,7 @@ import { isPronoUnlocked, unlockProno, getRewardedToday, incrementRewardedToday,
 import { CouplesView, CotesView } from "./CourseViews";
 import { PronosticView } from "./PronosticView";
 import { ArriveeCard, ParticipantRow, RapportsCard, LockedFeature } from "./CourseComponents";
+import { ParticipantModal } from "./ParticipantModal";
 
 type Segment = "partants" | "pronostic" | "cotes" | "couples";
 type Sort = "numero" | "cote";
@@ -52,6 +53,8 @@ function CourseContent() {
   const [pronoUnlocked, setPronoUnlocked] = useState(false);
   const [unlocking, setUnlocking] = useState(false);
   const [rewardsUsed, setRewardsUsed] = useState(0);
+
+  const [selectedParticipant, setSelectedParticipant] = useState<any | null>(null);
 
   const cKey = courseKey(date, r, c);
 
@@ -278,7 +281,7 @@ function CourseContent() {
                   part={item}
                   isFav={favHorseKeys.has(horseKey(date, r, c, item.numPmu))}
                   onFav={(e) => toggleHorseFav(item, e)}
-                  onPress={() => openHorse(item)}
+                  onPress={() => setSelectedParticipant(item)}
                 />
               ))}
             </div>
@@ -314,12 +317,13 @@ function CourseContent() {
           remaining={Math.max(0, REWARDED_DAILY_LIMIT - rewardsUsed)}
         />
       ) : segment === "couples" ? (
-        <CouplesView data={cotes} />
+        <CouplesView analysis={cotes.analysis} participants={participants} onHorseClick={setSelectedParticipant} />
       ) : segment === "pronostic" ? (
-        <PronosticView selection={selection} tocards={tocards} arrivee={arrivee} />
+        <PronosticView selection={selection} tocards={tocards} arrivee={arrivee} onHorseClick={setSelectedParticipant} />
       ) : (
-        <CotesView data={cotes} />
+        <CotesView analysis={cotes.analysis} participants={participants} onHorseClick={setSelectedParticipant} />
       )}
+      <ParticipantModal participant={selectedParticipant} onClose={() => setSelectedParticipant(null)} />
     </div>
   );
 }

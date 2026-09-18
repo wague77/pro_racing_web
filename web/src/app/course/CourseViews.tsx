@@ -18,7 +18,7 @@ const SIGNAL: Record<string, { color: string; bg: string; label: string; icon: a
   neutre: { color: "#6B7280", bg: "#F1F1F3", label: "Neutre", icon: "remove-outline" },
 };
 
-export function CoupHorse({ pos, h }: { pos: number; h: any }) {
+export function CoupHorse({ pos, h, onHorseClick }: { pos: number; h: any; onHorseClick?: (part: any) => void }) {
   return (
     <div className="flex flex-row items-center gap-2">
       <div className="w-5 h-5 rounded-full bg-[#EBEBEF] flex items-center justify-center">
@@ -27,14 +27,19 @@ export function CoupHorse({ pos, h }: { pos: number; h: any }) {
       <div className="w-7 h-7 rounded-lg bg-[#E6F4EA] flex items-center justify-center">
         <span className="text-base font-extrabold text-[#10B981]">{h.numPmu}</span>
       </div>
-      <span className="flex-1 text-base font-bold text-[#1C1C1E] truncate">{h.nom}</span>
+      <span 
+        className="flex-1 text-base font-bold text-[#1C1C1E] truncate hover:text-[#10B981] hover:underline cursor-pointer"
+        onClick={(e) => { e.stopPropagation(); onHorseClick && onHorseClick(h); }}
+      >
+        {h.nom}
+      </span>
       {h.coteDirect != null && <span className="text-base font-extrabold text-[#1C1C1E]">{h.coteDirect}</span>}
     </div>
   );
 }
 
-export function CouplesView({ data }: { data: { analysis: any[]; aJouer: number[] } }) {
-  const ranked = data.analysis;
+export function CouplesView({ analysis, onHorseClick }: { analysis: any[]; participants: any[]; onHorseClick?: (part: any) => void }) {
+  const ranked = analysis;
   const PAIRS: [number, number][] = [
     [1, 3],
     [1, 5],
@@ -75,9 +80,9 @@ export function CouplesView({ data }: { data: { analysis: any[]; aJouer: number[
             <span className="text-white font-black text-lg">{a}-{b}</span>
           </div>
           <div className="flex-1 flex flex-col gap-2">
-            <CoupHorse pos={a} h={ha} />
+            <CoupHorse pos={a} h={ha} onHorseClick={onHorseClick} />
             <div className="h-px bg-[#E5E5EA] w-full" />
-            <CoupHorse pos={b} h={hb} />
+            <CoupHorse pos={b} h={hb} onHorseClick={onHorseClick} />
           </div>
         </div>
       ))}
@@ -85,8 +90,10 @@ export function CouplesView({ data }: { data: { analysis: any[]; aJouer: number[
   );
 }
 
-export function CotesView({ data }: { data: { analysis: any[]; aJouer: number[] } }) {
-  const { analysis, aJouer } = data;
+export function CotesView({ analysis, onHorseClick }: { analysis: any[]; participants: any[]; onHorseClick?: (part: any) => void }) {
+  // We don't have aJouer directly here anymore, we'll extract it if needed or just skip it since analysis is enough
+  // Let's compute aJouer locally if needed
+  const aJouer = analysis.filter(a => a.signal === "jouer").map(a => a.numPmu);
   if (!analysis || analysis.length === 0) {
     return (
       <EmptyState
@@ -131,7 +138,12 @@ export function CotesView({ data }: { data: { analysis: any[]; aJouer: number[] 
               <span className="font-extrabold text-lg" style={{ color: c.color }}>{a.numPmu}</span>
             </div>
             <div className="flex-1 flex flex-col gap-1 min-w-0">
-              <span className="text-base font-bold text-[#1C1C1E] truncate">{a.nom}</span>
+              <span 
+                className="text-base font-bold text-[#1C1C1E] truncate hover:text-[#10B981] hover:underline cursor-pointer"
+                onClick={(e) => { e.stopPropagation(); onHorseClick && onHorseClick(a); }}
+              >
+                {a.nom}
+              </span>
               <div className="flex flex-row items-center gap-1.5 flex-wrap">
                 <span className="text-sm text-[#8E8E93] font-semibold line-through">
                   {a.coteReference != null ? a.coteReference.toFixed(1) : "—"}

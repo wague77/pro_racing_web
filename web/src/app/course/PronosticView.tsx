@@ -29,7 +29,7 @@ function EcartTag({ pos, rank, light }: { pos?: number; rank: number; light?: bo
   );
 }
 
-export function PronosticView({ selection, tocards, arrivee }: { selection: any[]; tocards: any[]; arrivee: any[] }) {
+export function PronosticView({ selection, tocards, arrivee, onHorseClick }: { selection: any[]; tocards: any[]; arrivee: any[]; onHorseClick?: (part: any) => void }) {
   if (!selection || selection.length === 0) {
     return (
       <EmptyState
@@ -124,12 +124,26 @@ export function PronosticView({ selection, tocards, arrivee }: { selection: any[
             <span className="text-white font-black text-3xl leading-none">{top.numPmu}</span>
           </div>
           <div className="flex-1 min-w-0">
-            <h3 className="text-white font-black text-2xl truncate tracking-tight">{top.nom}</h3>
+            <span 
+              className="text-white font-black text-2xl truncate tracking-tight hover:underline cursor-pointer block"
+              onClick={(e) => { e.stopPropagation(); onHorseClick && onHorseClick(top); }}
+            >
+              {top.nom}
+            </span>
             <div className="flex flex-wrap items-center gap-2 mt-1.5">
-              <span className="text-white/90 text-sm font-semibold bg-black/10 px-2 py-0.5 rounded flex items-center gap-1 truncate">
-                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
-                {top.driver || "Inconnu"}
-              </span>
+              {top.driver ? (
+                <span 
+                  className="text-white/90 text-sm font-semibold bg-black/10 px-2 py-0.5 rounded flex items-center gap-1 truncate transition-colors"
+                >
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
+                  {top.driver}
+                </span>
+              ) : (
+                <span className="text-white/90 text-sm font-semibold bg-black/10 px-2 py-0.5 rounded flex items-center gap-1 truncate">
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
+                  Inconnu
+                </span>
+              )}
               {top.age && top.sexe && (
                 <span className="text-white/80 text-xs font-bold uppercase tracking-wider bg-black/10 px-1.5 py-0.5 rounded">
                   {top.age} ans · {top.sexe}
@@ -169,7 +183,12 @@ export function PronosticView({ selection, tocards, arrivee }: { selection: any[
             </div>
             <div className="flex-1 min-w-0">
               <div className="flex items-center gap-2">
-                <h4 className="text-[16px] font-extrabold text-[#1C1C1E] truncate">{s.nom}</h4>
+                <span 
+                  className="text-[16px] font-extrabold text-[#1C1C1E] truncate hover:text-[#10B981] hover:underline cursor-pointer"
+                  onClick={(e) => { e.stopPropagation(); onHorseClick && onHorseClick(s); }}
+                >
+                  {s.nom}
+                </span>
                 {s.cote != null && (
                   <span className="text-[11px] font-bold px-1.5 py-0.5 rounded bg-gray-100 text-gray-600 shrink-0">
                     {s.cote.toFixed(1)}
@@ -219,7 +238,12 @@ export function PronosticView({ selection, tocards, arrivee }: { selection: any[
                   </div>
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2">
-                      <h4 className="text-[15px] font-extrabold text-[#1C1C1E] truncate">{t.nom}</h4>
+                      <span 
+                        className="text-[15px] font-extrabold text-[#1C1C1E] truncate hover:text-[#10B981] hover:underline cursor-pointer"
+                        onClick={(e) => { e.stopPropagation(); onHorseClick && onHorseClick(t); }}
+                      >
+                        {t.nom}
+                      </span>
                     </div>
                     <p className="text-[13px] text-[#B45309] mt-0.5 line-clamp-1">{t.reasoning}</p>
                   </div>

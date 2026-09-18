@@ -67,8 +67,16 @@ export function ParticipantRow({
       )}
 
       <div className="flex-1 min-w-0 flex flex-col">
-        <span className="text-lg font-bold text-[#1C1C1E] truncate">{part.nom}</span>
-        <span className="text-sm text-[#8E8E93] mt-0.5 truncate">{part.driver || part.entraineur}</span>
+        <span className="text-lg font-bold text-[#1C1C1E] truncate">
+          {part.nom}
+        </span>
+        <div className="flex flex-row gap-1 text-sm text-[#8E8E93] mt-0.5 truncate">
+          {part.driver ? (
+            <span className="truncate">{part.driver}</span>
+          ) : part.entraineur ? (
+            <span className="truncate">{part.entraineur}</span>
+          ) : null}
+        </div>
         {part.musique && <span className="text-sm text-[#10B981] font-semibold tracking-wide mt-1 truncate">{part.musique}</span>}
       </div>
 
