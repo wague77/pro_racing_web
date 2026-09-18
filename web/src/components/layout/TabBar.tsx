@@ -2,12 +2,13 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Calendar, Trophy, Heart, User, LogIn, LogOut } from "lucide-react";
+import { Calendar, Trophy, Heart, User, LogIn, LogOut, Wand } from "lucide-react";
 import { T } from "@/lib/theme";
 import { useAuth } from "@/lib/auth";
 
 const tabs = [
   { name: "Réunions", href: "/", icon: Calendar },
+  { name: "Magic Bases", href: "/magic-bases", icon: Wand },
   { name: "Pronostics", href: "/pronostics", icon: Trophy },
   { name: "Favoris", href: "/favoris", icon: Heart },
   { name: "Compte", href: "/compte", icon: User },
