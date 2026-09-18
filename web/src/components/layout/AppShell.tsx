@@ -4,6 +4,7 @@ import React, { useState, useEffect } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import { useAuth } from "@/lib/auth";
 import { Sidebar, TabBar, MobileHeader, MobileRightDrawer } from "./TabBar";
+import InstallPrompt from "@/components/pwa/InstallPrompt";
 
 export default function AppShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
@@ -18,9 +19,14 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
     }
   }, [token, loading, pathname, router]);
 
-  // Don't wrap login page with navigation chrome
+  // Don't wrap login page with navigation chrome, but allow PWA install prompt
   if (pathname === "/login") {
-    return <>{children}</>;
+    return (
+      <>
+        {children}
+        <InstallPrompt />
+      </>
+    );
   }
 
   // Show a loading screen while reading auth state
@@ -55,6 +61,10 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
 
       {/* 5. Mobile Bottom TabBar */}
       <TabBar />
+
+      {/* 6. PWA Installation Prompt */}
+      <InstallPrompt />
     </div>
   );
 }
+

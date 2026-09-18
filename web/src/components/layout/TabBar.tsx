@@ -15,7 +15,8 @@ import {
   X, 
   ShieldCheck, 
   Sparkles,
-  ChevronRight
+  ChevronRight,
+  Download
 } from "lucide-react";
 import { T } from "@/lib/theme";
 import { useAuth } from "@/lib/auth";
@@ -180,6 +181,17 @@ export function MobileRightDrawer({ open, onClose }: { open: boolean; onClose: (
 
         {/* Drawer Footer Actions */}
         <div className="p-4 border-t border-white/10 space-y-2">
+          <button
+            onClick={() => {
+              onClose();
+              window.dispatchEvent(new CustomEvent("trigger-pwa-install"));
+            }}
+            className="w-full flex items-center justify-center gap-2 bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 font-bold py-3 rounded-xl transition-colors border border-emerald-500/20 text-sm"
+          >
+            <Download size={18} />
+            <span>Installer l'application</span>
+          </button>
+
           {token ? (
             <button
               onClick={() => {
