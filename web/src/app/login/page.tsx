@@ -244,6 +244,12 @@ export default function Login() {
                   <div className="bg-green-500/20 p-1 rounded-full">
                     <svg className="w-4 h-4 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M5 13l4 4L19 7" /></svg>
                   </div>
+                  <span className="text-gray-200 text-sm font-semibold">Générateur <span className="text-amber-400">Magic Bases</span> (Nouveau)</span>
+                </div>
+                <div className="flex items-center gap-3 bg-white/5 rounded-xl p-2.5 border border-white/5">
+                  <div className="bg-green-500/20 p-1 rounded-full">
+                    <svg className="w-4 h-4 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M5 13l4 4L19 7" /></svg>
+                  </div>
                   <span className="text-gray-200 text-sm font-semibold">Couplés Gagnants à <span className="text-amber-400">90%</span></span>
                 </div>
                 <div className="flex items-center gap-3 bg-white/5 rounded-xl p-2.5 border border-white/5">
