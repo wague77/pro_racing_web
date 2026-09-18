@@ -13,8 +13,13 @@ import {
   PerfConfig,
   AccessCodesManager,
 } from "@/components/admin/AdminComponents";
-import AuditDashboard from "@/components/admin/AuditDashboard";
 import { FreeAccessControl } from "@/components/admin/FreeAccessControl";
+import dynamic from "next/dynamic";
+
+const AuditDashboard = dynamic(() => import("@/components/admin/AuditDashboard"), {
+  ssr: false,
+  loading: () => <div className="text-sm text-gray-500 animate-pulse">Chargement des statistiques...</div>
+});
 
 export default function Compte() {
   const router = useRouter();
