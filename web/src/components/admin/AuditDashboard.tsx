@@ -11,13 +11,23 @@ export default function AuditDashboard({ auditData, busy }: { auditData: any; bu
   }
   if (!auditData) return null;
 
-  const { recent_logs, chart_data } = auditData;
-
+  const recent_logs = auditData.recent_logs || [];
+  const chart_data = auditData.chart_data || [];
   const formatXAxis = (tickItem: string) => {
+    if (!tickItem) return "";
     try {
       return format(parseISO(tickItem), "dd MMM", { locale: fr });
     } catch {
       return tickItem;
+    }
+  };
+
+  const formatLogTime = (ts: string) => {
+    if (!ts) return "N/A";
+    try {
+      return format(parseISO(ts), "dd/MM HH:mm:ss");
+    } catch {
+      return ts;
     }
   };
 
@@ -75,7 +85,7 @@ export default function AuditDashboard({ auditData, busy }: { auditData: any; bu
               {recent_logs.map((log: any) => (
                 <tr key={log._id} className="hover:bg-gray-50">
                   <td className="px-4 py-3 whitespace-nowrap">
-                    {format(parseISO(log.timestamp), "dd/MM HH:mm:ss")}
+                    {formatLogTime(log.timestamp)}
                   </td>
                   <td className="px-4 py-3">{getStatusBadge(log.status)}</td>
                   <td className="px-4 py-3">{log.action === "admin_login" ? "Connexion Admin" : log.action === "user_login" ? "Connexion Client" : log.action}</td>
