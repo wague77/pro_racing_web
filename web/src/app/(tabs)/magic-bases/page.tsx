@@ -15,6 +15,7 @@ interface ParticipantPMU {
   numPmu: number;
   nom: string;
   dernierRapportDirect?: { rapport: number };
+  dernierRapportReference?: { rapport: number };
 }
 
 export default function MagicBasesPage() {
@@ -60,8 +61,8 @@ export default function MagicBasesPage() {
         setParticipants(data.participants);
         // Trier par cotes pour OPTImise
         const tries = [...data.participants].sort((a, b) => {
-          const coteA = a.dernierRapportDirect?.rapport || 999;
-          const coteB = b.dernierRapportDirect?.rapport || 999;
+          const coteA = a.dernierRapportDirect?.rapport ?? a.dernierRapportReference?.rapport ?? 999;
+          const coteB = b.dernierRapportDirect?.rapport ?? b.dernierRapportReference?.rapport ?? 999;
           return coteA - coteB;
         });
         setParticipants(tries);
@@ -146,6 +147,66 @@ export default function MagicBasesPage() {
     return true;
   };
 
+  const getHorseCote = (num: number): number | null => {
+    const p = participants.find(part => part.numPmu === num);
+    if (!p) return null;
+    const cote = p.dernierRapportDirect?.rapport ?? p.dernierRapportReference?.rapport;
+    return typeof cote === "number" && cote > 0 ? cote : null;
+  };
+
+  const getCombSumCotes = (comb: number[]): number | null => {
+    if (!participants || participants.length === 0) return null;
+    let total = 0;
+    let hasAny = false;
+    for (const num of comb) {
+      const c = getHorseCote(num);
+      if (c !== null) {
+        hasAny = true;
+        total += c;
+      } else {
+        total += 99; // Pénalité pour cheval sans cote (outsider non renseigné)
+      }
+    }
+    return hasAny ? Math.round(total * 10) / 10 : null;
+  };
+
+  const getCombSumFormatted = (comb: number[]): string => {
+    const sum = getCombSumCotes(comb);
+    return sum !== null ? sum.toFixed(1) : "—";
+  };
+
+  const getCombTooltip = (comb: number[]): string => {
+    const sum = getCombSumCotes(comb);
+    if (sum === null) return "Cotes non disponibles";
+    const details = comb
+      .map(n => {
+        const c = getHorseCote(n);
+        return `N°${n} [${c !== null ? c.toFixed(1) : "?"}]`;
+      })
+      .join(" + ");
+    return `Somme des cotes : ${sum.toFixed(1)} (${details})`;
+  };
+
+  const sortCombinaisonsParCotes = (combs: number[][]): number[][] => {
+    return [...combs].sort((a, b) => {
+      const sumA = getCombSumCotes(a);
+      const sumB = getCombSumCotes(b);
+      if (sumA === null && sumB === null) return 0;
+      if (sumA === null) return 1;
+      if (sumB === null) return -1;
+      return sumA - sumB;
+    });
+  };
+
+  // Réordonner si de nouvelles cotes sont chargées après génération
+  useEffect(() => {
+    if (hasGenerated && participants.length > 0) {
+      setResultTierce(prev => sortCombinaisonsParCotes(prev));
+      setResultCouple(prev => sortCombinaisonsParCotes(prev));
+      setResultQuinte(prev => sortCombinaisonsParCotes(prev));
+    }
+  }, [participants]);
+
   const handleGenerate = () => {
     const numPartants = parseInt(partantsInput);
     const numBase = parseInt(base);
@@ -168,6 +229,11 @@ export default function MagicBasesPage() {
     t = t.filter(evaluerCombinaison);
     cp = cp.filter(evaluerCombinaison);
     q = q.filter(evaluerCombinaison);
+
+    // Trier par somme des cotes croissante (la plus petite à la plus grande)
+    t = sortCombinaisonsParCotes(t);
+    cp = sortCombinaisonsParCotes(cp);
+    q = sortCombinaisonsParCotes(q);
 
     setResultTierce(t);
     setResultCouple(cp);
@@ -310,7 +376,12 @@ export default function MagicBasesPage() {
                 {/* Carte Tiercé */}
                 <div className="bg-[#1C1C1E] rounded-xl border border-white/5 overflow-hidden">
                   <div className="bg-[#2A2A2D] p-4 flex justify-between items-center">
-                    <h3 className="font-black text-lg">TIERCÉ</h3>
+                    <div>
+                      <h3 className="font-black text-lg">TIERCÉ</h3>
+                      <span className="text-xs text-[#D4AF37] font-semibold">
+                        Trié par somme des cotes croissante
+                      </span>
+                    </div>
                     <div className="text-right">
                       <div className="text-[#D4AF37] font-black text-xl">
                         {activeTab === "JEU_A" ? coutA_T : activeTab === "JEU_AB" ? coutAB_T : coutABC_T} €
@@ -320,20 +391,40 @@ export default function MagicBasesPage() {
                       </div>
                     </div>
                   </div>
-                  <div className="p-4 grid grid-cols-2 sm:grid-cols-3 gap-2">
-                    {resultTierce.map((c, i) => (
-                      <div key={i} className="bg-white/5 text-center py-2 rounded font-mono text-sm">
-                        {formatComb(c)}
-                      </div>
-                    ))}
-                    {resultTierce.length === 0 && <div className="col-span-full text-center text-gray-500 py-4">Aucune combinaison avec ces filtres</div>}
+                  <div className="p-4">
+                    <div className="flex items-center justify-between text-[11px] font-bold text-gray-400 uppercase tracking-wider px-2 pb-2 mb-2 border-b border-white/5">
+                      <span className="text-[#D4AF37]">Somme cotes</span>
+                      <span>Combinaison</span>
+                    </div>
+                    <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                      {resultTierce.map((c, i) => (
+                        <div 
+                          key={i} 
+                          className="flex items-center justify-between px-3 py-2 bg-white/5 hover:bg-white/10 rounded-lg border border-white/5 text-sm transition-all group cursor-default"
+                          title={getCombTooltip(c)}
+                        >
+                          <span className="text-xs font-black px-2 py-0.5 rounded bg-[#D4AF37]/20 text-[#D4AF37] border border-[#D4AF37]/30 group-hover:bg-[#D4AF37]/30 transition-colors">
+                            {getCombSumFormatted(c)}
+                          </span>
+                          <span className="font-mono font-bold tracking-wider text-white">
+                            {formatComb(c)}
+                          </span>
+                        </div>
+                      ))}
+                      {resultTierce.length === 0 && <div className="col-span-full text-center text-gray-500 py-4">Aucune combinaison avec ces filtres</div>}
+                    </div>
                   </div>
                 </div>
 
                 {/* Carte Couplé */}
                 <div className="bg-[#1C1C1E] rounded-xl border border-white/5 overflow-hidden">
                   <div className="bg-[#2A2A2D] p-4 flex justify-between items-center">
-                    <h3 className="font-black text-lg">COUPLÉ PLACÉ</h3>
+                    <div>
+                      <h3 className="font-black text-lg">COUPLÉ PLACÉ</h3>
+                      <span className="text-xs text-[#D4AF37] font-semibold">
+                        Trié par somme des cotes croissante
+                      </span>
+                    </div>
                     <div className="text-right">
                       <div className="text-[#D4AF37] font-black text-xl">
                         {activeTab === "JEU_A" ? coutA_C : activeTab === "JEU_AB" ? coutAB_C : coutABC_C} €
@@ -343,13 +434,28 @@ export default function MagicBasesPage() {
                       </div>
                     </div>
                   </div>
-                  <div className="p-4 grid grid-cols-2 sm:grid-cols-4 gap-2">
-                    {resultCouple.map((c, i) => (
-                      <div key={i} className="bg-white/5 text-center py-2 rounded font-mono text-sm">
-                        {formatComb(c)}
-                      </div>
-                    ))}
-                    {resultCouple.length === 0 && <div className="col-span-full text-center text-gray-500 py-4">Aucune combinaison avec ces filtres</div>}
+                  <div className="p-4">
+                    <div className="flex items-center justify-between text-[11px] font-bold text-gray-400 uppercase tracking-wider px-2 pb-2 mb-2 border-b border-white/5">
+                      <span className="text-[#D4AF37]">Somme cotes</span>
+                      <span>Combinaison</span>
+                    </div>
+                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                      {resultCouple.map((c, i) => (
+                        <div 
+                          key={i} 
+                          className="flex items-center justify-between px-3 py-2 bg-white/5 hover:bg-white/10 rounded-lg border border-white/5 text-sm transition-all group cursor-default"
+                          title={getCombTooltip(c)}
+                        >
+                          <span className="text-xs font-black px-2 py-0.5 rounded bg-[#D4AF37]/20 text-[#D4AF37] border border-[#D4AF37]/30 group-hover:bg-[#D4AF37]/30 transition-colors">
+                            {getCombSumFormatted(c)}
+                          </span>
+                          <span className="font-mono font-bold tracking-wider text-white">
+                            {formatComb(c)}
+                          </span>
+                        </div>
+                      ))}
+                      {resultCouple.length === 0 && <div className="col-span-full text-center text-gray-500 py-4">Aucune combinaison avec ces filtres</div>}
+                    </div>
                   </div>
                 </div>
               </div>
@@ -361,7 +467,7 @@ export default function MagicBasesPage() {
                 <div className="bg-gradient-to-r from-emerald-900/40 to-[#1C1C1E] p-4 flex justify-between items-center border-b border-emerald-500/20">
                   <div>
                     <h3 className="font-black text-lg text-emerald-400">QUINTÉ - GARANTIE 100% TIERCE</h3>
-                    <p className="text-xs text-gray-400">Joue un Quinté, garantit le Tiercé à 100% (sans ordre)</p>
+                    <p className="text-xs text-gray-400">Joue un Quinté, garantit le Tiercé à 100% (sans ordre) · Trié par somme des cotes croissante</p>
                   </div>
                   <div className="text-right">
                     <div className="text-emerald-400 font-black text-2xl">
@@ -369,13 +475,28 @@ export default function MagicBasesPage() {
                     </div>
                   </div>
                 </div>
-                <div className="p-4 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-                  {resultQuinte.map((c, i) => (
-                    <div key={i} className="bg-emerald-500/5 border border-emerald-500/10 text-center py-3 rounded-lg font-mono text-sm">
-                      {formatComb(c)}
-                    </div>
-                  ))}
-                  {resultQuinte.length === 0 && <div className="col-span-full text-center text-gray-500 py-4">Aucune combinaison avec ces filtres</div>}
+                <div className="p-4">
+                  <div className="flex items-center justify-between text-[11px] font-bold text-gray-400 uppercase tracking-wider px-2 pb-2 mb-2 border-b border-white/5">
+                    <span className="text-emerald-400">Somme cotes</span>
+                    <span>Combinaison</span>
+                  </div>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                    {resultQuinte.map((c, i) => (
+                      <div 
+                        key={i} 
+                        className="flex items-center justify-between px-3.5 py-2.5 bg-emerald-500/5 hover:bg-emerald-500/10 border border-emerald-500/20 rounded-lg text-sm transition-all group cursor-default"
+                        title={getCombTooltip(c)}
+                      >
+                        <span className="text-xs font-black px-2 py-0.5 rounded bg-emerald-400/20 text-emerald-300 border border-emerald-400/30 group-hover:bg-emerald-400/30 transition-colors">
+                          {getCombSumFormatted(c)}
+                        </span>
+                        <span className="font-mono font-bold tracking-wider text-white">
+                          {formatComb(c)}
+                        </span>
+                      </div>
+                    ))}
+                    {resultQuinte.length === 0 && <div className="col-span-full text-center text-gray-500 py-4">Aucune combinaison avec ces filtres</div>}
+                  </div>
                 </div>
               </div>
             )}
