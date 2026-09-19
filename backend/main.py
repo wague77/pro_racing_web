@@ -866,8 +866,9 @@ async def get_performance(_user: dict = Depends(require_full)):
 
 
 @api_router.get("/performance-ia2")
-async def get_performance_ia2(_user: dict = Depends(require_full)):
-    days = await get_perf_days()
+async def get_performance_ia2(days: int = None, _user: dict = Depends(require_full)):
+    if days is None:
+        days = await get_perf_days()
     dates = _last_dates(days)
     
     results = [r async for r in db.perf_notes.find({"date": {"$in": dates}}).limit(5000)]

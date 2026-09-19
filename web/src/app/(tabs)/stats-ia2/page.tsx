@@ -1,11 +1,12 @@
 "use client";
 
-import React, { useEffect, useState, useCallback } from "react";
+import React, { useEffect, useState, useCallback, useMemo } from "react";
 import { useAuth } from "@/lib/auth";
 import { api } from "@/lib/api";
 import { Loader, EmptyState } from "@/components/ui";
-import { Trophy, Star, RefreshCw, Info } from "lucide-react";
+import { Trophy, Star, RefreshCw, Info, Calendar, ChevronDown } from "lucide-react";
 import AdBanner from "@/components/AdBanner";
+import { format } from "date-fns";
 
 interface NoteStat {
   score: number;
@@ -15,36 +16,84 @@ interface NoteStat {
   quinteRate: number;
 }
 
+interface Horse {
+  numPmu: number;
+  nom: string;
+  score: number;
+}
+
 export default function StatsIa2() {
   const { token, isDemo } = useAuth();
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  
+  // Historical stats state
   const [stats, setStats] = useState<NoteStat[]>([]);
   const [races, setRaces] = useState(0);
-  const [days, setDays] = useState(0);
+  const [days, setDays] = useState(30); // Default to 30 days
   const [computing, setComputing] = useState(false);
   const [processed, setProcessed] = useState(0);
+
+  // Today's Quinté state
+  const [quinteRaceInfo, setQuinteRaceInfo] = useState<{ r: number, c: number, libelle: string } | null>(null);
+  const [quintePronostic, setQuintePronostic] = useState<Horse[] | null>(null);
 
   const loadData = useCallback(async () => {
     if (!token) return;
     try {
       setLoading(true);
       setError(null);
-      const res = await api.performanceIa2(token);
+      
+      // Fetch historical stats for the selected period
+      const res = await api.performanceIa2(token, days);
       setStats(res.stats || []);
       setRaces(res.races || 0);
-      setDays(res.days || 0);
       setComputing(res.computing || false);
       setProcessed(res.processed || 0);
+
+      // Fetch today's Quinté
+      const today = new Date();
+      const dateStr = format(today, "ddMMyyyy");
+      const progRes = await api.programme(dateStr, token);
+      
+      let qRace: { r: number, c: number, libelle: string } | null = null;
+      if (progRes && progRes.reunions) {
+        for (const reunion of progRes.reunions) {
+          for (const course of reunion.courses || []) {
+            if (course.quinte) {
+              qRace = {
+                r: reunion.numOfficiel,
+                c: course.numOrdre,
+                libelle: `R${reunion.numOfficiel}C${course.numOrdre} - ${course.libelleCourt || course.libelle}`
+              };
+              break;
+            }
+          }
+          if (qRace) break;
+        }
+      }
+
+      setQuinteRaceInfo(qRace);
+
+      if (qRace) {
+        const pronoRes = await api.pronostic(dateStr, qRace.r, qRace.c, token);
+        if (pronoRes && pronoRes.selection) {
+          setQuintePronostic(pronoRes.selection);
+        } else {
+          setQuintePronostic(null);
+        }
+      } else {
+        setQuintePronostic(null);
+      }
+
     } catch (e: any) {
-      setError(e.message || "Erreur lors du chargement des statistiques IA 2.");
+      setError(e.message || "Erreur lors du chargement des données.");
     } finally {
       setLoading(false);
     }
-  }, [token]);
+  }, [token, days]);
 
   useEffect(() => {
-    // We only load if the user is a premium member, or at least if we have a token.
     if (token) {
       loadData();
     } else {
@@ -59,6 +108,12 @@ export default function StatsIa2() {
       return () => clearInterval(t);
     }
   }, [computing, loadData]);
+
+  const statsMap = useMemo(() => {
+    const map = new Map<number, NoteStat>();
+    stats.forEach(s => map.set(s.score, s));
+    return map;
+  }, [stats]);
 
   if (!token) {
     return (
@@ -92,10 +147,10 @@ export default function StatsIa2() {
           <div>
             <h1 className="text-2xl font-black text-white tracking-tight flex items-center gap-2">
               <Trophy className="text-[#F5C518]" size={24} />
-              Stats Notes IA 2
+              Stats IA 2 & Quinté
             </h1>
             <p className="text-sm text-gray-400 mt-1">
-              Les notes les plus chanceuses (Derniers {days} jours)
+              Probabilités selon l'historique
             </p>
           </div>
           <button 
@@ -110,7 +165,35 @@ export default function StatsIa2() {
         </div>
       </div>
 
-      <div className="flex-1 flex flex-col p-4 pb-24 md:pb-8">
+      <div className="flex-1 flex flex-col p-4 pb-24 md:pb-8 max-w-4xl mx-auto w-full">
+        
+        {/* Filtre de Période */}
+        <div className="mb-6 flex flex-col sm:flex-row items-start sm:items-center justify-between bg-[#1C1C1E] rounded-xl border border-white/5 p-4 gap-4">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-lg bg-blue-500/10 flex items-center justify-center text-blue-400">
+              <Calendar size={20} />
+            </div>
+            <div>
+              <h2 className="text-sm font-bold text-white">Période d'analyse</h2>
+              <p className="text-xs text-gray-400">Historique des arrivées Quinté+</p>
+            </div>
+          </div>
+          <div className="relative w-full sm:w-auto">
+            <select
+              value={days}
+              onChange={(e) => setDays(Number(e.target.value))}
+              disabled={loading}
+              className="w-full sm:w-48 appearance-none bg-[#0E0E10] border border-white/10 rounded-lg pl-4 pr-10 py-2.5 text-sm font-bold text-white focus:outline-none focus:border-blue-500/50 disabled:opacity-50"
+            >
+              <option value={30}>1 Mois (30 jours)</option>
+              <option value={90}>3 Mois (90 jours)</option>
+              <option value={180}>6 Mois (180 jours)</option>
+              <option value={365}>1 An (365 jours)</option>
+            </select>
+            <ChevronDown size={16} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 pointer-events-none" />
+          </div>
+        </div>
+
         {computing && (
           <div className="mb-6 bg-blue-500/10 border border-blue-500/20 rounded-xl p-4 flex items-start gap-3">
             <RefreshCw className="animate-spin text-blue-400 mt-0.5 flex-shrink-0" size={18} />
@@ -130,60 +213,127 @@ export default function StatsIa2() {
         )}
 
         {loading && stats.length === 0 ? (
-          <Loader label="Chargement des statistiques..." />
-        ) : stats.length === 0 ? (
-          <EmptyState
-            icon="BarChart3"
-            title="Aucune statistique"
-            subtitle="Pas assez de données pour le moment."
-            onRetry={loadData}
-          />
+          <Loader label="Chargement des données..." />
         ) : (
-          <div className="space-y-4 max-w-3xl mx-auto w-full">
-            <div className="bg-[#1C1C1E] rounded-xl border border-white/5 p-4 mb-2">
-              <div className="flex items-center gap-2 text-sm text-gray-400 mb-1">
-                <Info size={16} />
-                <p>Basé sur <span className="font-bold text-white">{races}</span> courses Quinté+ analysées.</p>
-              </div>
-              <p className="text-xs text-gray-500">
-                Ce tableau classe les valeurs entières des scores (notes) attribués par l'IA de la plus performante (dans le Quinté) à la moins performante.
-              </p>
-            </div>
+          <div className="space-y-6">
+            
+            {/* Section Quinté du Jour */}
+            <div>
+              <h2 className="text-xl font-black text-white mb-4 flex items-center gap-2">
+                Pronostic Quinté du Jour
+                {quinteRaceInfo && <span className="text-xs font-bold bg-[#F5C518]/20 text-[#F5C518] px-2 py-1 rounded-md">{quinteRaceInfo.libelle}</span>}
+              </h2>
 
-            <div className="grid grid-cols-1 gap-3">
-              {stats.map((s, index) => (
-                <div key={s.score} className="bg-[#1C1C1E] border border-white/5 rounded-xl p-4 flex flex-col sm:flex-row items-center gap-4 hover:border-white/10 transition-colors">
-                  <div className="flex items-center gap-4 w-full sm:w-auto">
-                    <div className="w-8 text-center font-bold text-gray-500">
-                      #{index + 1}
-                    </div>
-                    <div className="w-16 h-16 rounded-xl bg-gradient-to-br from-white/10 to-white/5 border border-white/10 flex flex-col items-center justify-center flex-shrink-0">
-                      <span className="text-xs text-gray-400 uppercase tracking-wider font-bold mb-0.5">Note</span>
-                      <span className="text-xl font-black text-white">{s.score}</span>
-                    </div>
+              {!quinteRaceInfo ? (
+                <EmptyState
+                  icon="Calendar"
+                  title="Pas de Quinté aujourd'hui"
+                  subtitle="Aucune course Quinté n'a été trouvée dans le programme du jour."
+                />
+              ) : !quintePronostic ? (
+                <div className="bg-[#1C1C1E] rounded-xl border border-white/5 p-6 text-center text-gray-400 text-sm">
+                  Le pronostic IA pour le Quinté du jour n'est pas encore disponible.
+                </div>
+              ) : (
+                <div className="bg-[#1C1C1E] rounded-xl border border-[#F5C518]/20 overflow-hidden relative shadow-[0_0_15px_rgba(245,197,24,0.05)]">
+                  <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-[#F5C518] to-transparent opacity-50"></div>
+                  
+                  <div className="grid grid-cols-1 divide-y divide-white/5">
+                    {quintePronostic.map((horse, idx) => {
+                      const roundedScore = Math.round(horse.score);
+                      const horseStats = statsMap.get(roundedScore);
+                      
+                      return (
+                        <div key={horse.numPmu} className="p-4 flex flex-col sm:flex-row items-center gap-4 hover:bg-white/[0.02] transition-colors">
+                          <div className="flex items-center gap-4 w-full sm:w-1/3">
+                            <div className="w-8 h-8 rounded-full bg-white/5 flex items-center justify-center font-black text-gray-400 border border-white/10 flex-shrink-0">
+                              {idx + 1}
+                            </div>
+                            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-[#F5C518]/20 to-[#F5C518]/5 border border-[#F5C518]/30 flex flex-col items-center justify-center flex-shrink-0 relative overflow-hidden">
+                              <span className="text-base font-black text-[#F5C518] relative z-10">{horse.numPmu}</span>
+                            </div>
+                            <div className="flex-1 truncate">
+                              <h3 className="font-bold text-white text-sm truncate">{horse.nom}</h3>
+                              <p className="text-xs text-gray-400">Note: {horse.score.toFixed(1)}</p>
+                            </div>
+                          </div>
+
+                          <div className="flex-1 grid grid-cols-3 gap-2 w-full mt-2 sm:mt-0">
+                            <div className="bg-[#0E0E10] rounded-lg p-2 text-center border border-white/5 relative overflow-hidden">
+                              <div className="text-[10px] uppercase font-bold text-gray-500 tracking-wider mb-1">Quinté</div>
+                              <div className="text-sm font-black text-[#10B981]">
+                                {horseStats ? `${horseStats.quinteRate}%` : "N/A"}
+                              </div>
+                            </div>
+                            <div className="bg-[#0E0E10] rounded-lg p-2 text-center border border-white/5">
+                              <div className="text-[10px] uppercase font-bold text-gray-500 tracking-wider mb-1">Placé</div>
+                              <div className="text-sm font-black text-[#F5C518]">
+                                {horseStats ? `${horseStats.placeRate}%` : "N/A"}
+                              </div>
+                            </div>
+                            <div className="bg-[#0E0E10] rounded-lg p-2 text-center border border-white/5">
+                              <div className="text-[10px] uppercase font-bold text-gray-500 tracking-wider mb-1">Gagnant</div>
+                              <div className="text-sm font-black text-[#3B82F6]">
+                                {horseStats ? `${horseStats.winRate}%` : "N/A"}
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    })}
                   </div>
                   
-                  <div className="flex-1 grid grid-cols-3 gap-3 w-full mt-2 sm:mt-0">
-                    <div className="bg-[#0E0E10] rounded-lg p-3 text-center border border-white/5">
-                      <div className="text-[10px] uppercase font-bold text-gray-500 tracking-wider mb-1">Quinté</div>
-                      <div className="text-lg font-black text-[#10B981]">{s.quinteRate}%</div>
-                    </div>
-                    <div className="bg-[#0E0E10] rounded-lg p-3 text-center border border-white/5">
-                      <div className="text-[10px] uppercase font-bold text-gray-500 tracking-wider mb-1">Placé</div>
-                      <div className="text-lg font-black text-[#F5C518]">{s.placeRate}%</div>
-                    </div>
-                    <div className="bg-[#0E0E10] rounded-lg p-3 text-center border border-white/5">
-                      <div className="text-[10px] uppercase font-bold text-gray-500 tracking-wider mb-1">Gagnant</div>
-                      <div className="text-lg font-black text-[#3B82F6]">{s.winRate}%</div>
-                    </div>
-                  </div>
-                  
-                  <div className="w-full sm:w-auto text-center sm:text-right text-xs text-gray-500 mt-2 sm:mt-0">
-                    <span className="font-bold text-gray-300">{s.count}</span> apparitions
+                  <div className="p-3 bg-[#0E0E10]/50 border-t border-white/5 text-center">
+                    <p className="text-[11px] text-gray-500">
+                      Les pourcentages indiquent la probabilité statistique de réussite basée sur {races} courses Quinté+ analysées les {days} derniers jours pour chaque note entière.
+                    </p>
                   </div>
                 </div>
-              ))}
+              )}
             </div>
+
+            {/* Section Classement Global (Optionnelle / informative) */}
+            <div className="pt-6 border-t border-white/10">
+              <h2 className="text-xl font-black text-white mb-4">Classement Global des Notes</h2>
+              <p className="text-sm text-gray-400 mb-4">
+                Découvrez quelles notes ont été historiquement les plus chanceuses dans le Quinté+ sur les {days} derniers jours.
+              </p>
+              
+              {stats.length === 0 ? (
+                <EmptyState
+                  icon="BarChart3"
+                  title="Aucune statistique"
+                  subtitle="Pas assez de données pour la période sélectionnée."
+                  onRetry={loadData}
+                />
+              ) : (
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  {stats.slice(0, 10).map((s, index) => (
+                    <div key={s.score} className="bg-[#1C1C1E] border border-white/5 rounded-xl p-3 flex items-center gap-3">
+                      <div className="w-6 text-center font-bold text-gray-500 text-xs">#{index + 1}</div>
+                      <div className="w-10 h-10 rounded-lg bg-white/5 border border-white/10 flex items-center justify-center flex-shrink-0">
+                        <span className="text-sm font-black text-white">{s.score}</span>
+                      </div>
+                      <div className="flex-1 flex justify-between items-center px-2">
+                        <div className="text-center">
+                          <div className="text-[9px] text-gray-500 uppercase font-bold">Q+</div>
+                          <div className="text-sm font-black text-[#10B981]">{s.quinteRate}%</div>
+                        </div>
+                        <div className="text-center">
+                          <div className="text-[9px] text-gray-500 uppercase font-bold">Placé</div>
+                          <div className="text-sm font-black text-[#F5C518]">{s.placeRate}%</div>
+                        </div>
+                        <div className="text-center">
+                          <div className="text-[9px] text-gray-500 uppercase font-bold">Gagnant</div>
+                          <div className="text-sm font-black text-[#3B82F6]">{s.winRate}%</div>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+
           </div>
         )}
       </div>
