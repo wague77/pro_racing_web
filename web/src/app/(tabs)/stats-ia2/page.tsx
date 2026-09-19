@@ -3,6 +3,7 @@
 import React, { useEffect, useState, useCallback, useMemo } from "react";
 import { useAuth } from "@/lib/auth";
 import { api } from "@/lib/api";
+import { isQuintePlus } from "@/lib/format";
 import { Loader, EmptyState } from "@/components/ui";
 import { Trophy, Star, RefreshCw, Info, Calendar, ChevronDown } from "lucide-react";
 import AdBanner from "@/components/AdBanner";
@@ -60,7 +61,7 @@ export default function StatsIa2() {
       if (progRes && progRes.reunions) {
         for (const reunion of progRes.reunions) {
           for (const course of reunion.courses || []) {
-            if (course.quinte) {
+            if (isQuintePlus(course)) {
               qRace = {
                 r: reunion.numOfficiel,
                 c: course.numOrdre,
