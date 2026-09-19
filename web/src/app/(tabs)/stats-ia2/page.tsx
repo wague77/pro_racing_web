@@ -16,7 +16,7 @@ interface NoteStat {
 }
 
 export default function StatsIa2() {
-  const { token, hasFullAccess, validateContext } = useAuth();
+  const { token, isDemo } = useAuth();
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [stats, setStats] = useState<NoteStat[]>([]);
@@ -69,8 +69,7 @@ export default function StatsIa2() {
     );
   }
 
-  // Same requirement as /performance => require_full
-  if (!hasFullAccess(validateContext)) {
+  if (isDemo) {
     return (
       <div className="flex-1 flex flex-col p-4 pb-24 md:pb-8">
         <div className="flex flex-col items-center justify-center p-8 text-center bg-white/5 rounded-2xl border border-white/10 mt-12">
