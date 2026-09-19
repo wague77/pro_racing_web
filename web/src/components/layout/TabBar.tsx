@@ -25,6 +25,7 @@ export const tabs = [
   { name: "Réunions", href: "/", icon: Calendar, description: "Programme & Quinté+" },
   { name: "Magic Bases", href: "/magic-bases", icon: Wand, description: "Bases fiables de la journée" },
   { name: "Pronostics", href: "/pronostics", icon: Trophy, description: "Analyses & Algorithmes IA" },
+  { name: "Stats IA 2", href: "/stats-ia2", icon: Sparkles, description: "Statistiques des notes IA 2" },
   { name: "Favoris", href: "/favoris", icon: Heart, description: "Chevaux & courses suivis" },
   { name: "Compte", href: "/compte", icon: User, description: "Espace client & Administration" },
 ];
@@ -244,7 +245,7 @@ export function TabBar() {
           <Link
             key={tab.name}
             href={tab.href}
-            className="flex flex-col items-center justify-center w-16 transition-transform active:scale-90"
+            className="flex flex-col items-center justify-center flex-1 transition-transform active:scale-90"
           >
             <div className={`p-1 rounded-xl transition-colors ${isActive ? "bg-emerald-500/10" : ""}`}>
               <Icon size={22} color={color} strokeWidth={isActive ? 2.5 : 2} />
