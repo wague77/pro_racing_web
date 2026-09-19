@@ -744,7 +744,9 @@ async def _compute_performance(days: int, limit: int = 120):
                         continue
                     cnum = course.get("numExterne") or course.get("numOrdre")
                     key = f"{date}-R{rnum}-C{cnum}"
-                    if await db.perf_quinte.find_one({"_id": key}):
+                    has_quinte = await db.perf_quinte.find_one({"_id": key})
+                    has_notes = await db.perf_notes.find_one({"_id": key})
+                    if has_quinte and has_notes:
                         continue
                     try:
                         parts = await asyncio.to_thread(_fetch_participants, date, rnum, cnum)
@@ -766,25 +768,56 @@ async def _compute_performance(days: int, limit: int = 120):
                     trio_hits = sum(1 for n in trio if pos_by_num.get(n) and pos_by_num[n] <= 3)
                     quinte5 = [s["numPmu"] for s in sel[:5]]
                     quinte_hits = sum(1 for n in quinte5 if pos_by_num.get(n) and pos_by_num[n] <= 5)
-                    await db.perf_quinte.update_one(
-                        {"_id": key},
-                        {
-                            "$set": {
-                                "date": date,
-                                "r": rnum,
-                                "c": cnum,
-                                "hippodrome": (reunion.get("hippodrome") or {}).get("libelleCourt"),
-                                "favNum": fav["numPmu"],
-                                "favPos": fav_pos,
-                                "won": fav_pos == 1,
-                                "placed": fav_pos is not None and fav_pos <= 3,
-                                "trioHits": trio_hits,
-                                "quinteHits": quinte_hits,
-                                "computed_at": now_utc().isoformat(),
-                            }
-                        },
-                        upsert=True,
-                    )
+                    if not has_quinte:
+                        await db.perf_quinte.update_one(
+                            {"_id": key},
+                            {
+                                "$set": {
+                                    "date": date,
+                                    "r": rnum,
+                                    "c": cnum,
+                                    "hippodrome": (reunion.get("hippodrome") or {}).get("libelleCourt"),
+                                    "favNum": fav["numPmu"],
+                                    "favPos": fav_pos,
+                                    "won": fav_pos == 1,
+                                    "placed": fav_pos is not None and fav_pos <= 3,
+                                    "trioHits": trio_hits,
+                                    "quinteHits": quinte_hits,
+                                    "computed_at": now_utc().isoformat(),
+                                }
+                            },
+                            upsert=True,
+                        )
+
+                    if not has_notes:
+                        notes_data = []
+                        for idx, s in enumerate(sel):
+                            num = s["numPmu"]
+                            score_val = s["score"]
+                            pos = pos_by_num.get(num)
+                            notes_data.append({
+                                "numPmu": num,
+                                "score": score_val,
+                                "int_score": int(round(score_val)),
+                                "rank": idx + 1,
+                                "pos": pos,
+                                "won": pos == 1,
+                                "placed": pos is not None and pos <= 3,
+                                "in_quinte": pos is not None and pos <= 5,
+                            })
+                        await db.perf_notes.update_one(
+                            {"_id": key},
+                            {
+                                "$set": {
+                                    "date": date,
+                                    "r": rnum,
+                                    "c": cnum,
+                                    "notes": notes_data,
+                                    "computed_at": now_utc().isoformat()
+                                }
+                            },
+                            upsert=True
+                        )
                     processed += 1
                     perf_state["processed"] = processed
                     await asyncio.sleep(0.03)
@@ -827,6 +860,57 @@ async def get_performance(_user: dict = Depends(require_full)):
         "trioAvg": round(trio / races, 2) if races else 0,
         "quinteAvg": round(quinte / races, 2) if races else 0,
         "byDay": day_list,
+        "computing": perf_state["running"],
+        "processed": perf_state["processed"],
+    }
+
+
+@api_router.get("/performance-ia2")
+async def get_performance_ia2(_user: dict = Depends(require_full)):
+    days = await get_perf_days()
+    dates = _last_dates(days)
+    
+    results = [r async for r in db.perf_notes.find({"date": {"$in": dates}}).limit(5000)]
+    races = len(results)
+    
+    stats_by_score = {}
+    for r in results:
+        for n in r.get("notes", []):
+            sc = n.get("int_score")
+            if sc is None:
+                continue
+            if sc not in stats_by_score:
+                stats_by_score[sc] = {"score": sc, "count": 0, "won": 0, "placed": 0, "quinte": 0}
+            
+            stats_by_score[sc]["count"] += 1
+            if n.get("won"):
+                stats_by_score[sc]["won"] += 1
+            if n.get("placed"):
+                stats_by_score[sc]["placed"] += 1
+            if n.get("in_quinte"):
+                stats_by_score[sc]["quinte"] += 1
+
+    final_stats = []
+    for sc, data in stats_by_score.items():
+        count = data["count"]
+        # Only keep scores with enough occurrences to be statistically relevant, e.g. min 5, or just all
+        if count > 0:
+            final_stats.append({
+                "score": sc,
+                "count": count,
+                "winRate": round((data["won"] / count) * 100, 1),
+                "placeRate": round((data["placed"] / count) * 100, 1),
+                "quinteRate": round((data["quinte"] / count) * 100, 1)
+            })
+            
+    final_stats.sort(key=lambda x: (x["quinteRate"], x["placeRate"], x["winRate"]), reverse=True)
+    
+    asyncio.create_task(_compute_performance(days))
+    
+    return {
+        "days": days,
+        "races": races,
+        "stats": final_stats,
         "computing": perf_state["running"],
         "processed": perf_state["processed"],
     }

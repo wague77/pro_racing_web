@@ -75,6 +75,7 @@ export const api = {
   rapports: (date: string, r: number, c: number, token: string) =>
     req(`/pmu/course/${date}/${r}/${c}/rapports`, { token }),
   performance: (token: string) => req(`/performance`, { token }),
+  performanceIa2: (token: string) => req(`/performance-ia2`, { token }),
   getPerfConfig: (token: string) => req("/admin/perf-config", { token }),
   setPerfConfig: (days: number, token: string) =>
     req("/admin/perf-config", { method: "POST", body: { days }, token }),
