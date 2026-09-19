@@ -961,12 +961,40 @@ async def get_performance_ia2(days: int = None, _user: dict = Depends(require_fu
     if not target_scores:
         target_scores = [s["score"] for s in top_quinte[:3]]
 
+    # Calcul des stats par tranche de notes demandées par l'utilisateur:
+    # 20 à 59 | 60 à 79 | 80 à 100
+    def _calc_tranche(min_s: int, max_s: int, label: str, desc: str):
+        sub = [s for s in final_stats if min_s <= s["score"] <= max_s]
+        tot_cnt = sum(s["count"] for s in sub)
+        tot_won = sum(s.get("won", 0) for s in sub)
+        tot_placed = sum(s.get("placed", 0) for s in sub)
+        tot_quinte = sum(s.get("quinte", 0) for s in sub)
+        return {
+            "range": [min_s, max_s],
+            "label": label,
+            "description": desc,
+            "count": tot_cnt,
+            "won": tot_won,
+            "placed": tot_placed,
+            "quinte": tot_quinte,
+            "winRate": round((tot_won / tot_cnt) * 100, 1) if tot_cnt > 0 else 0.0,
+            "placeRate": round((tot_placed / tot_cnt) * 100, 1) if tot_cnt > 0 else 0.0,
+            "quinteRate": round((tot_quinte / tot_cnt) * 100, 1) if tot_cnt > 0 else 0.0,
+        }
+
+    tranches = [
+        _calc_tranche(20, 59, "Notes 20 à 59", "Outsiders & Spéculatifs"),
+        _calc_tranche(60, 79, "Notes 60 à 79", "Chances Régulières"),
+        _calc_tranche(80, 100, "Notes 80 à 100", "Top Favoris & Élite"),
+    ]
+
     asyncio.create_task(_compute_performance(days))
     
     return {
         "days": days,
         "races": races,
         "stats": final_stats,
+        "tranches": tranches,
         "targetNotes": {
             "topQuinte": top_quinte,
             "topWon": top_won,

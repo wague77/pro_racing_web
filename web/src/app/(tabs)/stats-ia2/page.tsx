@@ -5,7 +5,7 @@ import { useAuth } from "@/lib/auth";
 import { api } from "@/lib/api";
 import { isQuintePlus, apiDate, fmtHeure } from "@/lib/format";
 import { Loader, EmptyState } from "@/components/ui";
-import { Trophy, Star, RefreshCw, Calendar as CalendarIcon, ChevronDown, ChevronLeft, ChevronRight, Target, Sparkles, CheckCircle, Flame, ShieldAlert, Award } from "lucide-react";
+import { Trophy, Star, RefreshCw, Calendar as CalendarIcon, ChevronDown, ChevronLeft, ChevronRight, Target, Sparkles, CheckCircle, Flame, ShieldAlert, Award, Layers, BarChart3, TrendingUp } from "lucide-react";
 import AdBanner from "@/components/AdBanner";
 import dayjs from "dayjs";
 import "dayjs/locale/fr";
@@ -21,6 +21,19 @@ interface NoteStat {
   won?: number;
   placed?: number;
   quinte?: number;
+}
+
+export interface TrancheStat {
+  range: [number, number];
+  label: string;
+  description: string;
+  count: number;
+  won: number;
+  placed: number;
+  quinte: number;
+  winRate: number;
+  placeRate: number;
+  quinteRate: number;
 }
 
 interface TargetNotes {
@@ -44,6 +57,7 @@ export default function StatsIa2() {
   
   // Historical stats state
   const [stats, setStats] = useState<NoteStat[]>([]);
+  const [serverTranches, setServerTranches] = useState<TrancheStat[]>([]);
   const [targetNotes, setTargetNotes] = useState<TargetNotes | null>(null);
   const [races, setRaces] = useState(0);
   const [days, setDays] = useState(30); // 30, 90, 180, 365
@@ -64,6 +78,7 @@ export default function StatsIa2() {
       // 1. Fetch historical stats & target notes for the selected period
       const res = await api.performanceIa2(token, days);
       setStats(res.stats || []);
+      setServerTranches(res.tranches || []);
       setTargetNotes(res.targetNotes || null);
       setRaces(res.races || 0);
       setComputing(res.computing || false);
@@ -155,6 +170,41 @@ export default function StatsIa2() {
       .filter(item => item.isTarget)
       .sort((a, b) => (b.stat?.quinteRate || 0) - (a.stat?.quinteRate || 0));
   }, [quintePronostic, statsMap, stats]);
+
+  // Tranches de notes demandées : 20 à 59 | 60 à 79 | 80 à 100
+  const tranches: TrancheStat[] = useMemo(() => {
+    if (serverTranches && serverTranches.length > 0) return serverTranches;
+
+    const calcTranche = (minS: number, maxS: number, label: string, desc: string): TrancheStat => {
+      const sub = stats.filter(s => s.score >= minS && s.score <= maxS);
+      const c = sub.reduce((acc, s) => acc + (s.count || 0), 0);
+      const w = sub.reduce((acc, s) => acc + (s.won || 0), 0);
+      const p = sub.reduce((acc, s) => acc + (s.placed || 0), 0);
+      const q = sub.reduce((acc, s) => acc + (s.quinte || 0), 0);
+      return {
+        range: [minS, maxS],
+        label,
+        description: desc,
+        count: c,
+        won: w,
+        placed: p,
+        quinte: q,
+        winRate: c > 0 ? Math.round((w / c) * 1000) / 10 : 0,
+        placeRate: c > 0 ? Math.round((p / c) * 1000) / 10 : 0,
+        quinteRate: c > 0 ? Math.round((q / c) * 1000) / 10 : 0,
+      };
+    };
+
+    return [
+      calcTranche(20, 59, "Notes 20 à 59", "Outsiders & Spéculatifs"),
+      calcTranche(60, 79, "Notes 60 à 79", "Chances Régulières"),
+      calcTranche(80, 100, "Notes 80 à 100", "Top Favoris & Élite"),
+    ];
+  }, [serverTranches, stats]);
+
+  const totalHorsesAnalyzed = useMemo(() => {
+    return tranches.reduce((acc, t) => acc + t.count, 0);
+  }, [tranches]);
 
   if (!token) {
     return (
@@ -571,7 +621,210 @@ export default function StatsIa2() {
             </div>
 
             {/* ======================================================== */}
-            {/* 📊 SECTION 3: CLASSEMENT EXHAUSTIF DES NOTES PASSÉES     */}
+            {/* 📈 SECTION 3: STATISTIQUES DES NOTES PAR TRANCHE         */}
+            {/* ======================================================== */}
+            <div className="pt-4 border-t border-white/10 space-y-4">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                <div>
+                  <div className="flex items-center gap-2">
+                    <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-amber-500/20 to-emerald-500/20 border border-white/10 flex items-center justify-center">
+                      <Layers size={18} className="text-[#F5C518]" />
+                    </div>
+                    <h2 className="text-xl font-black text-white">Statistiques des Notes par Tranche</h2>
+                  </div>
+                  <p className="text-xs text-gray-400 mt-1">
+                    Taux de réussite Quinté+, Placé et Gagnant selon 3 catégories de valeurs (20 à 59, 60 à 79, 80 à 100)
+                  </p>
+                </div>
+                {totalHorsesAnalyzed > 0 && (
+                  <div className="self-start sm:self-auto px-3 py-1.5 rounded-xl bg-white/5 border border-white/10 text-xs font-bold text-gray-300">
+                    <span className="text-[#F5C518] font-black">{totalHorsesAnalyzed}</span> partants analysés
+                  </div>
+                )}
+              </div>
+
+              {/* 3 Cartes de Tranches */}
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-3.5">
+                {tranches.map((t, idx) => {
+                  const percentOfPeloton = totalHorsesAnalyzed > 0 ? ((t.count / totalHorsesAnalyzed) * 100).toFixed(0) : "0";
+                  
+                  // Styles thématiques selon la tranche demandée
+                  const config = [
+                    {
+                      border: "border-amber-500/30 hover:border-amber-500/50",
+                      badgeBg: "bg-amber-500/15 text-amber-400 border-amber-500/30",
+                      glow: "from-amber-500/10 via-transparent to-transparent",
+                      quinteBar: "from-amber-500 to-amber-400",
+                      quinteText: "text-amber-400",
+                      tip: "Outsiders & tocards. Clé pour faire grimper les gains du Quinté en complément des bases.",
+                      tag: "Spéculatif",
+                    },
+                    {
+                      border: "border-blue-500/30 hover:border-blue-500/50",
+                      badgeBg: "bg-blue-500/15 text-blue-400 border-blue-500/30",
+                      glow: "from-blue-500/10 via-transparent to-transparent",
+                      quinteBar: "from-blue-500 to-sky-400",
+                      quinteText: "text-blue-400",
+                      tip: "Chances régulières. Profil d'appoint idéal pour compléter vos combinaisons et champs réduits.",
+                      tag: "Régulier",
+                    },
+                    {
+                      border: "border-emerald-500/30 hover:border-emerald-500/50",
+                      badgeBg: "bg-emerald-500/15 text-emerald-400 border-emerald-500/30",
+                      glow: "from-emerald-500/10 via-transparent to-transparent",
+                      quinteBar: "from-emerald-500 to-emerald-400",
+                      quinteText: "text-emerald-400",
+                      tip: "Chevaux d'élite. Les plus forts taux de réussite, à retenir en priorité absolue comme bases de jeu.",
+                      tag: "Élite IA",
+                    },
+                  ][idx] || {
+                    border: "border-white/10 hover:border-white/20",
+                    badgeBg: "bg-white/10 text-white border-white/20",
+                    glow: "from-white/5 via-transparent to-transparent",
+                    quinteBar: "from-gray-400 to-white",
+                    quinteText: "text-white",
+                    tip: "Statistiques d'arrivée.",
+                    tag: "Notes",
+                  };
+
+                  return (
+                    <div 
+                      key={t.label} 
+                      className={`relative overflow-hidden bg-[#1C1C1E] border ${config.border} rounded-2xl p-4 transition-all duration-300 flex flex-col justify-between`}
+                    >
+                      <div className={`absolute top-0 right-0 w-32 h-32 bg-gradient-to-bl ${config.glow} pointer-events-none rounded-bl-full`} />
+
+                      <div>
+                        {/* En-tête de la tranche */}
+                        <div className="flex items-center justify-between gap-2 mb-2.5">
+                          <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider border ${config.badgeBg}`}>
+                            {config.tag} · {t.range[0]} à {t.range[1]}
+                          </span>
+                          <span className="text-[11px] font-bold text-gray-400">
+                            {t.count} partants ({percentOfPeloton}%)
+                          </span>
+                        </div>
+
+                        <h3 className="text-base font-black text-white">{t.label}</h3>
+                        <p className="text-xs text-gray-400 mb-3.5">{t.description}</p>
+
+                        {/* Métrique Principale: Taux Quinté+ (Top 5) */}
+                        <div className="bg-[#0E0E10] border border-white/5 rounded-xl p-3 mb-3">
+                          <div className="flex items-baseline justify-between mb-1.5">
+                            <span className="text-xs font-bold text-gray-300">Dans le Quinté+ (Top 5)</span>
+                            <span className={`text-xl font-black ${config.quinteText}`}>{t.quinteRate}%</span>
+                          </div>
+                          
+                          {/* Barre de progression Quinté */}
+                          <div className="w-full h-2 rounded-full bg-white/10 overflow-hidden mb-1.5">
+                            <div 
+                              className={`h-full rounded-full bg-gradient-to-r ${config.quinteBar} transition-all duration-700`}
+                              style={{ width: `${Math.min(100, t.quinteRate)}%` }}
+                            />
+                          </div>
+
+                          <div className="flex justify-between text-[10px] text-gray-500 font-medium">
+                            <span>{t.quinte} arrivées Quinté+</span>
+                            <span>sur {t.count} partants</span>
+                          </div>
+                        </div>
+
+                        {/* Métriques secondaires: Placé (Top 3) et Gagnant (1er) */}
+                        <div className="grid grid-cols-2 gap-2 mb-3">
+                          {/* Placé */}
+                          <div className="bg-[#0E0E10] border border-white/5 rounded-xl p-2.5">
+                            <div className="text-[10px] uppercase font-bold text-gray-400 tracking-wider mb-0.5">Placé (Top 3)</div>
+                            <div className="text-base font-black text-[#F5C518] mb-1">{t.placeRate}%</div>
+                            <div className="w-full h-1.5 rounded-full bg-white/10 overflow-hidden mb-1">
+                              <div 
+                                className="h-full rounded-full bg-[#F5C518] transition-all duration-700"
+                                style={{ width: `${Math.min(100, t.placeRate)}%` }}
+                              />
+                            </div>
+                            <div className="text-[10px] text-gray-500">{t.placed} podiums</div>
+                          </div>
+
+                          {/* Gagnant */}
+                          <div className="bg-[#0E0E10] border border-white/5 rounded-xl p-2.5">
+                            <div className="text-[10px] uppercase font-bold text-gray-400 tracking-wider mb-0.5">Gagnant (1er)</div>
+                            <div className="text-base font-black text-blue-400 mb-1">{t.winRate}%</div>
+                            <div className="w-full h-1.5 rounded-full bg-white/10 overflow-hidden mb-1">
+                              <div 
+                                className="h-full rounded-full bg-blue-500 transition-all duration-700"
+                                style={{ width: `${Math.min(100, t.winRate)}%` }}
+                              />
+                            </div>
+                            <div className="text-[10px] text-gray-500">{t.won} victoires</div>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Conseil / Astuce de jeu */}
+                      <div className="p-2.5 rounded-xl bg-white/[0.03] border border-white/5 text-[11px] text-gray-400 leading-relaxed">
+                        <span className="font-bold text-gray-300">💡 Conseil : </span>
+                        {config.tip}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+
+              {/* Tableau comparatif synthétique */}
+              <div className="bg-[#1C1C1E] border border-white/10 rounded-2xl overflow-hidden shadow-lg">
+                <div className="p-3.5 bg-white/[0.02] border-b border-white/5 flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <BarChart3 size={15} className="text-[#F5C518]" />
+                    <span className="text-xs font-bold text-white uppercase tracking-wider">Synthèse Comparative des 3 Tranches</span>
+                  </div>
+                  <span className="text-[11px] text-gray-400">{races} courses Quinté+ analysées</span>
+                </div>
+
+                <div className="overflow-x-auto">
+                  <table className="w-full text-left text-xs">
+                    <thead>
+                      <tr className="border-b border-white/5 text-gray-400 text-[11px] uppercase tracking-wider bg-black/20">
+                        <th className="py-2.5 px-4 font-bold">Tranche de Note</th>
+                        <th className="py-2.5 px-4 font-bold text-center">Partants</th>
+                        <th className="py-2.5 px-4 font-bold text-center text-emerald-400">Réussite Quinté+ (Top 5)</th>
+                        <th className="py-2.5 px-4 font-bold text-center text-[#F5C518]">Réussite Placé (Top 3)</th>
+                        <th className="py-2.5 px-4 font-bold text-center text-blue-400">Taux Gagnant (1er)</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-white/5 font-medium">
+                      {tranches.map((t) => (
+                        <tr key={t.label} className="hover:bg-white/[0.02] transition-colors">
+                          <td className="py-3 px-4">
+                            <div className="font-black text-white">{t.label}</div>
+                            <div className="text-[10px] text-gray-500">{t.description}</div>
+                          </td>
+                          <td className="py-3 px-4 text-center">
+                            <span className="font-bold text-gray-300">{t.count}</span>
+                            <span className="text-[10px] text-gray-500 block">
+                              {totalHorsesAnalyzed > 0 ? `${((t.count / totalHorsesAnalyzed) * 100).toFixed(0)}% du total` : ""}
+                            </span>
+                          </td>
+                          <td className="py-3 px-4 text-center">
+                            <span className="text-sm font-black text-emerald-400">{t.quinteRate}%</span>
+                            <span className="text-[10px] text-gray-500 block">{t.quinte} sur {t.count}</span>
+                          </td>
+                          <td className="py-3 px-4 text-center">
+                            <span className="text-sm font-black text-[#F5C518]">{t.placeRate}%</span>
+                            <span className="text-[10px] text-gray-500 block">{t.placed} sur {t.count}</span>
+                          </td>
+                          <td className="py-3 px-4 text-center">
+                            <span className="text-sm font-black text-blue-400">{t.winRate}%</span>
+                            <span className="text-[10px] text-gray-500 block">{t.won} sur {t.count}</span>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+
+            {/* ======================================================== */}
+            {/* 📊 SECTION 4: CLASSEMENT EXHAUSTIF DES NOTES PASSÉES     */}
             {/* ======================================================== */}
             <div className="pt-4 border-t border-white/10">
               <div className="mb-4">
