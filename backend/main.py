@@ -482,17 +482,30 @@ async def root():
 
 
 def _is_quinte_plus(course: dict) -> bool:
-    """Détecte la course support du Quinté+ via la liste des paris (dispo aussi en historique)."""
-    paris = course.get("paris")
-    if not isinstance(paris, list):
+    """Détecte la course support du Quinté+ via la liste des paris ou drapeaux PMU."""
+    if not course:
         return False
-    for p in paris:
-        if isinstance(p, dict):
-            t = str(p.get("typePari") or p.get("type") or "").upper()
-        else:
-            t = str(p).upper()
-        if "QUINTE_PLUS" in t:
+    if course.get("quinte") is True:
+        return True
+    paris = course.get("paris")
+    if isinstance(paris, list):
+        for p in paris:
+            if isinstance(p, dict):
+                t = str(p.get("typePari") or p.get("type") or p.get("codePari") or "").upper()
+            else:
+                t = str(p).upper()
+            if "QUINTE" in t or "EB5" in t:
+                return True
+    for pool in course.get("poolIds") or []:
+        if isinstance(pool, dict) and "EB5" in str(pool.get("codePari", "")).upper():
             return True
+    for cag in course.get("cagnottes") or []:
+        if isinstance(cag, dict) and "EB5" in str(cag.get("typePari", "")).upper():
+            return True
+    lib = (course.get("libelle") or "").upper()
+    lib_court = (course.get("libelleCourt") or "").upper()
+    if "QUINTÉ" in lib or "QUINTE" in lib or "QUINTÉ" in lib_court or "QUINTE" in lib_court:
+        return True
     return False
 
 
@@ -523,6 +536,7 @@ async def get_programme(date: str, _user: dict = Depends(require_user)):
                     "arriveeDefinitive": c.get("arriveeDefinitive", False),
                     "departImminent": c.get("departImminent", False),
                     "quinte": _is_quinte_plus(c),
+                    "paris": [p.get("typePari") for p in c.get("paris", []) if isinstance(p, dict)] if c.get("paris") else [],
                 }
             )
         reunions.append(
@@ -704,10 +718,7 @@ def _last_dates(days: int) -> List[str]:
 
 
 def _is_quinte(course: dict) -> bool:
-    for p in course.get("paris", []) or []:
-        if p.get("typePari") == "QUINTE_PLUS":
-            return True
-    return False
+    return _is_quinte_plus(course)
 
 
 async def get_perf_days() -> int:
@@ -720,109 +731,132 @@ async def get_perf_days() -> int:
     return max(7, min(365, days))
 
 
-async def _compute_performance(days: int, limit: int = 120):
+async def _process_quinte_date(date: str) -> bool:
+    """Traite une date donnée pour extraire et stocker les stats Quinté et les notes IA 2."""
+    try:
+        prog = await asyncio.to_thread(pmu_fetch, f"{date}", 300)
+    except Exception:
+        return False
+    if not prog or "programme" not in prog:
+        return False
+    
+    found_any = False
+    for reunion in prog["programme"].get("reunions", []):
+        rnum = reunion.get("numOfficiel") or reunion.get("numExterne")
+        for course in reunion.get("courses", []):
+            if not _is_quinte_plus(course):
+                continue
+            if not course.get("arriveeDefinitive"):
+                continue
+            cnum = course.get("numOrdre") or course.get("numExterne")
+            key = f"{date}-R{rnum}-C{cnum}"
+            
+            has_quinte = await db.perf_quinte.find_one({"_id": key})
+            has_notes = await db.perf_notes.find_one({"_id": key})
+            if has_quinte and has_notes:
+                found_any = True
+                continue
+            
+            try:
+                parts = await asyncio.to_thread(_fetch_participants, date, rnum, cnum)
+            except Exception:
+                continue
+            
+            pos_by_num = {
+                p.get("numPmu"): p.get("ordreArrivee")
+                for p in parts
+                if isinstance(p.get("ordreArrivee"), int) and p.get("ordreArrivee") > 0
+            }
+            if not pos_by_num:
+                continue
+            
+            sel = compute_pronostic(parts)
+            if not sel:
+                continue
+            
+            fav = sel[0]
+            fav_pos = pos_by_num.get(fav["numPmu"])
+            trio = [s["numPmu"] for s in sel[:3]]
+            trio_hits = sum(1 for n in trio if pos_by_num.get(n) and pos_by_num[n] <= 3)
+            quinte5 = [s["numPmu"] for s in sel[:5]]
+            quinte_hits = sum(1 for n in quinte5 if pos_by_num.get(n) and pos_by_num[n] <= 5)
+            
+            if not has_quinte:
+                await db.perf_quinte.update_one(
+                    {"_id": key},
+                    {
+                        "$set": {
+                            "date": date,
+                            "r": rnum,
+                            "c": cnum,
+                            "hippodrome": (reunion.get("hippodrome") or {}).get("libelleCourt"),
+                            "favNum": fav["numPmu"],
+                            "favPos": fav_pos,
+                            "won": fav_pos == 1,
+                            "placed": fav_pos is not None and fav_pos <= 3,
+                            "trioHits": trio_hits,
+                            "quinteHits": quinte_hits,
+                            "computed_at": now_utc().isoformat(),
+                        }
+                    },
+                    upsert=True,
+                )
+
+            if not has_notes:
+                notes_data = []
+                for idx, s in enumerate(sel):
+                    num = s["numPmu"]
+                    score_val = s["score"]
+                    pos = pos_by_num.get(num)
+                    notes_data.append({
+                        "numPmu": num,
+                        "nom": s.get("nom", ""),
+                        "score": score_val,
+                        "int_score": int(round(score_val)),
+                        "rank": idx + 1,
+                        "pos": pos,
+                        "won": pos == 1,
+                        "placed": pos is not None and pos <= 3,
+                        "in_quinte": pos is not None and pos <= 5,
+                    })
+                await db.perf_notes.update_one(
+                    {"_id": key},
+                    {
+                        "$set": {
+                            "date": date,
+                            "r": rnum,
+                            "c": cnum,
+                            "hippodrome": (reunion.get("hippodrome") or {}).get("libelleCourt"),
+                            "notes": notes_data,
+                            "computed_at": now_utc().isoformat()
+                        }
+                    },
+                    upsert=True
+                )
+            found_any = True
+    return found_any
+
+
+async def _compute_performance(days: int, limit: int = 365):
     if perf_state["running"]:
         return
     perf_state["running"] = True
     perf_state["processed"] = 0
     processed = 0
     try:
-        for date in _last_dates(days):
-            try:
-                prog = await asyncio.to_thread(pmu_fetch, f"{date}", 300)
-            except Exception:
-                continue
-            if not prog or "programme" not in prog:
-                continue
-            for reunion in prog["programme"].get("reunions", []):
-                rnum = reunion.get("numExterne") or reunion.get("numOfficiel")
-                for course in reunion.get("courses", []):
-                    # Course support du Quinté+ uniquement
-                    if not _is_quinte(course):
-                        continue
-                    if not course.get("arriveeDefinitive"):
-                        continue
-                    cnum = course.get("numExterne") or course.get("numOrdre")
-                    key = f"{date}-R{rnum}-C{cnum}"
-                    has_quinte = await db.perf_quinte.find_one({"_id": key})
-                    has_notes = await db.perf_notes.find_one({"_id": key})
-                    if has_quinte and has_notes:
-                        continue
-                    try:
-                        parts = await asyncio.to_thread(_fetch_participants, date, rnum, cnum)
-                    except Exception:
-                        continue
-                    pos_by_num = {
-                        p.get("numPmu"): p.get("ordreArrivee")
-                        for p in parts
-                        if isinstance(p.get("ordreArrivee"), int) and p.get("ordreArrivee") > 0
-                    }
-                    if not pos_by_num:
-                        continue
-                    sel = compute_pronostic(parts)
-                    if not sel:
-                        continue
-                    fav = sel[0]
-                    fav_pos = pos_by_num.get(fav["numPmu"])
-                    trio = [s["numPmu"] for s in sel[:3]]
-                    trio_hits = sum(1 for n in trio if pos_by_num.get(n) and pos_by_num[n] <= 3)
-                    quinte5 = [s["numPmu"] for s in sel[:5]]
-                    quinte_hits = sum(1 for n in quinte5 if pos_by_num.get(n) and pos_by_num[n] <= 5)
-                    if not has_quinte:
-                        await db.perf_quinte.update_one(
-                            {"_id": key},
-                            {
-                                "$set": {
-                                    "date": date,
-                                    "r": rnum,
-                                    "c": cnum,
-                                    "hippodrome": (reunion.get("hippodrome") or {}).get("libelleCourt"),
-                                    "favNum": fav["numPmu"],
-                                    "favPos": fav_pos,
-                                    "won": fav_pos == 1,
-                                    "placed": fav_pos is not None and fav_pos <= 3,
-                                    "trioHits": trio_hits,
-                                    "quinteHits": quinte_hits,
-                                    "computed_at": now_utc().isoformat(),
-                                }
-                            },
-                            upsert=True,
-                        )
-
-                    if not has_notes:
-                        notes_data = []
-                        for idx, s in enumerate(sel):
-                            num = s["numPmu"]
-                            score_val = s["score"]
-                            pos = pos_by_num.get(num)
-                            notes_data.append({
-                                "numPmu": num,
-                                "score": score_val,
-                                "int_score": int(round(score_val)),
-                                "rank": idx + 1,
-                                "pos": pos,
-                                "won": pos == 1,
-                                "placed": pos is not None and pos <= 3,
-                                "in_quinte": pos is not None and pos <= 5,
-                            })
-                        await db.perf_notes.update_one(
-                            {"_id": key},
-                            {
-                                "$set": {
-                                    "date": date,
-                                    "r": rnum,
-                                    "c": cnum,
-                                    "notes": notes_data,
-                                    "computed_at": now_utc().isoformat()
-                                }
-                            },
-                            upsert=True
-                        )
+        all_dates = _last_dates(days)
+        batch_size = 4
+        for i in range(0, len(all_dates), batch_size):
+            chunk = all_dates[i:i + batch_size]
+            tasks = [_process_quinte_date(d) for d in chunk]
+            results = await asyncio.gather(*tasks, return_exceptions=True)
+            for r in results:
+                if r is True:
                     processed += 1
-                    perf_state["processed"] = processed
-                    await asyncio.sleep(0.03)
-                    if processed >= limit:
-                        return
+            perf_state["processed"] = processed
+            if processed >= limit:
+                break
+            await asyncio.sleep(0.05)
     finally:
         perf_state["running"] = False
 
@@ -874,6 +908,14 @@ async def get_performance_ia2(days: int = None, _user: dict = Depends(require_fu
     results = [r async for r in db.perf_notes.find({"date": {"$in": dates}}).limit(5000)]
     races = len(results)
     
+    # Si la base est encore vide ou a très peu de courses (< 5), on calcule directement les premières dates pour donner un retour immédiat
+    if races < 5:
+        initial_chunk = dates[:8]
+        tasks = [_process_quinte_date(d) for d in initial_chunk]
+        await asyncio.gather(*tasks, return_exceptions=True)
+        results = [r async for r in db.perf_notes.find({"date": {"$in": dates}}).limit(5000)]
+        races = len(results)
+    
     stats_by_score = {}
     for r in results:
         for n in r.get("notes", []):
@@ -894,24 +936,43 @@ async def get_performance_ia2(days: int = None, _user: dict = Depends(require_fu
     final_stats = []
     for sc, data in stats_by_score.items():
         count = data["count"]
-        # Only keep scores with enough occurrences to be statistically relevant, e.g. min 5, or just all
         if count > 0:
             final_stats.append({
                 "score": sc,
                 "count": count,
                 "winRate": round((data["won"] / count) * 100, 1),
                 "placeRate": round((data["placed"] / count) * 100, 1),
-                "quinteRate": round((data["quinte"] / count) * 100, 1)
+                "quinteRate": round((data["quinte"] / count) * 100, 1),
+                "won": data["won"],
+                "placed": data["placed"],
+                "quinte": data["quinte"],
             })
             
-    final_stats.sort(key=lambda x: (x["quinteRate"], x["placeRate"], x["winRate"]), reverse=True)
+    final_stats.sort(key=lambda x: (x["quinteRate"], x["placeRate"], x["winRate"], x["count"]), reverse=True)
     
+    # Calcul des notes à cibler pour jouer
+    # Notes avec les meilleurs taux de réussite dans le Quinté+ (minimum 1 course, prioriser celles qui reviennent)
+    top_quinte = sorted(final_stats, key=lambda x: (x["quinteRate"], x["count"]), reverse=True)[:5]
+    top_won = sorted(final_stats, key=lambda x: (x["winRate"], x["count"]), reverse=True)[:5]
+    top_placed = sorted(final_stats, key=lambda x: (x["placeRate"], x["count"]), reverse=True)[:5]
+    
+    # Ensemble de scores clés recommandés
+    target_scores = list(set([s["score"] for s in top_quinte if s["quinteRate"] >= 30]))
+    if not target_scores:
+        target_scores = [s["score"] for s in top_quinte[:3]]
+
     asyncio.create_task(_compute_performance(days))
     
     return {
         "days": days,
         "races": races,
         "stats": final_stats,
+        "targetNotes": {
+            "topQuinte": top_quinte,
+            "topWon": top_won,
+            "topPlaced": top_placed,
+            "recommendedScores": target_scores,
+        },
         "computing": perf_state["running"],
         "processed": perf_state["processed"],
     }
